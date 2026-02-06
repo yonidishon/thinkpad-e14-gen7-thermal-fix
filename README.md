@@ -57,13 +57,13 @@ System runs for hours → Components overheat silently (no monitoring) → GPU b
 
 ### Analysis Reports
 - **`REVISED_hang_analysis.md`** - Complete technical analysis with all findings
-- **`hang_analysis_report.md`** - Original analysis (superseded by REVISED version)
 - **`analyze_system_hang.py`** - Python script to analyze system logs
 - **`README.md`** - This file
 
 ### Temperature Monitoring
-- **`temp_monitor_gui.sh`** - GUI temperature monitor with popup warnings
-- **`monitor_temps.sh`** - Console temperature monitor
+- **`temp_monitor_gui.sh`** - GUI temperature monitor with popup warnings (logs every minute)
+- **`monitor_temps.sh`** - Console temperature monitor (updates every 2 seconds)
+- **`cpu_stress_test.py`** - CPU stress testing tool for thermal testing
 - **`temp-monitor.service`** - Systemd service file for automatic startup
 - **`temp-monitor.desktop`** - Autostart desktop entry
 - **`install_temp_monitor.sh`** - Quick installation script

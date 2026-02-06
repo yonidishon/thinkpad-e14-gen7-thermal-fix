@@ -3,7 +3,7 @@
 # Monitors temperatures and shows popup warnings when temps get too high
 
 # Temperature thresholds
-WARN_TEMP=80
+WARN_TEMP=85
 CRITICAL_TEMP=90
 CHECK_INTERVAL=10  # Check every 10 seconds
 
@@ -68,6 +68,9 @@ last_warning_time=0
 last_critical_time=0
 warning_cooldown=300  # 5 minutes between repeat warnings
 
+# Counter for periodic logging (every minute)
+check_counter=0
+
 check_already_running
 
 log_message "Temperature monitor started (PID: $$)"
@@ -121,8 +124,9 @@ while true; do
         fi
     fi
 
-    # Log current max temp every 10 checks (every 100 seconds)
-    if [ $((RANDOM % 10)) -eq 0 ]; then
+    # Log current max temp every minute (every 6 checks × 10 seconds)
+    check_counter=$((check_counter + 1))
+    if [ $((check_counter % 6)) -eq 0 ]; then
         log_message "Current max temperature: ${max_temp}°C"
     fi
 
