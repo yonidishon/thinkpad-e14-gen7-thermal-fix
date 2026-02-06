@@ -10,7 +10,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Temperature thresholds
-WARN_TEMP=80
+WARN_TEMP=85
 CRITICAL_TEMP=90
 
 echo -e "${CYAN}=== ThinkPad E14 Temperature Monitor ===${NC}"

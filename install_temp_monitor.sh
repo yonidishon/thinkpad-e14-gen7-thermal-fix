@@ -91,7 +91,7 @@ esac
 
 echo ""
 echo "Testing notification system..."
-notify-send -u normal "Temperature Monitor" "Installation complete! You will receive alerts if temperature exceeds 80°C."
+notify-send -u normal "Temperature Monitor" "Installation complete! You will receive alerts if temperature exceeds 85°C."
 
 echo ""
 echo "Done! See SETUP_INSTRUCTIONS.md for full documentation."

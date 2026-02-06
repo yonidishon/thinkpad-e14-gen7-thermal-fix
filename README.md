@@ -105,7 +105,7 @@ This will:
 - Install required dependencies (libnotify-bin)
 - Let you choose between systemd service or autostart
 - Start the monitor immediately
-- Show GUI popup warnings when temps exceed 80°C
+- Show GUI popup warnings when temps exceed 85°C
 - Show critical alerts when temps exceed 90°C
 
 ### 3. Update Graphics Stack
@@ -185,9 +185,8 @@ gnome-shell: Cursor update failed: drmModeAtomicCommit: Invalid argument
 
 | Temperature | Status | Action |
 |------------|--------|--------|
-| < 80°C | ✓ Normal | No action needed |
-| 80-85°C | ⚠️ Elevated | Ensure good ventilation, use cooling pad |
-| 85-90°C | ⚠️ High | Close demanding apps, check for dust |
+| < 85°C | ✓ Normal | No action needed |
+| 85-90°C | ⚠️ Warning | Ensure good ventilation, monitor load |
 | 90-95°C | 🔥 Critical | Close apps immediately, let cool down |
 | > 95°C | 🚨 Extreme | Shut down to prevent damage/hang |
 
