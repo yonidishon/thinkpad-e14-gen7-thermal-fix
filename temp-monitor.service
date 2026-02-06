@@ -1,0 +1,15 @@
+[Unit]
+Description=ThinkPad Temperature Monitor with GUI Notifications
+After=graphical.target
+Wants=graphical.target
+
+[Service]
+Type=simple
+ExecStart=/home/yonatan/dev/sys_crash_analysis/temp_monitor_gui.sh
+Restart=on-failure
+RestartSec=30
+Environment=DISPLAY=:0
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/%U/bus
+
+[Install]
+WantedBy=default.target

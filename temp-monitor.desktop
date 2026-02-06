@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=ThinkPad Temperature Monitor
+Comment=Monitor system temperatures and alert on overheating
+Exec=/home/yonatan/dev/sys_crash_analysis/temp_monitor_gui.sh
+Icon=utilities-system-monitor
+Terminal=false
+Categories=System;Monitor;
+X-GNOME-Autostart-enabled=true
+Hidden=false
+NoDisplay=false
