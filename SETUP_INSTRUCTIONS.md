@@ -4,7 +4,7 @@
 
 Due to ACPI/EC errors preventing thermal sensor access and fan control on your ThinkPad E14 Gen 7, this temperature monitoring system will:
 - Monitor available thermal zones every 10 seconds
-- Show GUI popup warnings when temperature exceeds 80°C
+- Show GUI popup warnings when temperature exceeds 85°C
 - Show critical alerts when temperature exceeds 90°C
 - Log all events to `~/.temp_monitor.log`
 - Prevent duplicate alerts (5 minute cooldown)
@@ -119,7 +119,7 @@ nano /home/yonatan/dev/sys_crash_analysis/temp_monitor_gui.sh
 
 Modify these values:
 ```bash
-WARN_TEMP=80        # Warning notification at this temperature
+WARN_TEMP=85        # Warning notification at this temperature
 CRITICAL_TEMP=90    # Critical alert at this temperature
 CHECK_INTERVAL=10   # How often to check (seconds)
 ```
@@ -136,7 +136,7 @@ pkill -f temp_monitor_gui.sh
 
 ## Notification Types
 
-### Normal Warning (≥80°C)
+### Normal Warning (≥85°C)
 - Shows yellow notification with temperature details
 - Repeats every 5 minutes if temperature stays high
 - Logged to file
@@ -229,7 +229,7 @@ sudo nano /etc/default/grub
 
 Modify this line:
 ```
-GRUB_CMDLINE_LINUX_DEFAULT="quiet splash acpi_ec_no_wakeup i915.enable_psr=0"
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash acpi_ec_no_wakeup i915.enable_psr=0 i915.enable_dsb=0"
 ```
 
 Then update GRUB:
@@ -241,6 +241,7 @@ sudo reboot
 This helps with:
 - `acpi_ec_no_wakeup` - May help with EC communication issues
 - `i915.enable_psr=0` - Fixes the graphics cursor update failures
+- `i915.enable_dsb=0` - Fixes DSB poll errors and kernel panics
 
 ---
 
@@ -265,10 +266,9 @@ grep "max temperature" ~/.temp_monitor.log | sort -k7 -n | tail -10
 
 ## When to Take Action
 
-- **< 80°C**: Normal operation, no action needed
-- **80-85°C**: Elevated, ensure good ventilation, use cooling pad
-- **85-90°C**: High, close demanding applications, check for dust in vents
-- **90-95°C**: Critical, immediately close applications and let cool down
+- **< 85°C**: Normal operation, no action needed
+- **85-90°C**: Warning, ensure good ventilation, monitor load
+- **90-95°C**: Critical, close demanding applications immediately, let cool down
 - **> 95°C**: Extreme danger, shut down system to prevent damage/hang
 
 ---
@@ -291,4 +291,4 @@ Once Lenovo releases a BIOS update that fixes EC access, you may be able to:
 
 ---
 
-**Last Updated:** 2026-02-06
+**Last Updated:** 2026-02-07

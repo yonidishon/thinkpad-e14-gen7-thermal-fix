@@ -1,10 +1,28 @@
 # ThinkPad E14 Gen 7 System Hang Analysis & Monitoring
 
+## ⚠️ LATEST UPDATE - February 7, 2026
+
+**New crash identified with different root cause!**
+
+The February 7 crash (flashing CAPS LOCK, kernel panic) was caused by **i915 DSB (Display State Buffer) hardware bug**, not Mesa or thermal issues.
+
+**See:** [`Analysis_Process.md`](./Analysis_Process.md) for complete investigation and findings.
+
+**Quick Summary:**
+- Intel i915 DSB poll error on Arrow Lake-P graphics
+- Causes kernel panic when closing laptop lid without suspend
+- **Solution:** Disable DSB with kernel parameter `i915.enable_dsb=0` (see below)
+- Mesa downgrade was attempted but did NOT fix the issue (DSB is kernel-level)
+
+---
+
 ## Executive Summary
 
-Your ThinkPad E14 Gen 7 (Model: 21SX005CIV) experienced a system freeze after ~10 hours of operation. Analysis of system logs revealed a **compound hardware/software issue**:
+Your ThinkPad E14 Gen 7 (Model: 21SX005CIV) has experienced multiple types of system freezes:
 
-### Root Causes Identified
+### Crash Type 1: Thermal + Graphics (Original Issue)
+
+Analysis of earlier system logs revealed a **compound hardware/software issue**:
 
 1. **ACPI/EC Communication Failure** (Primary)
    - ThinkPad ACPI Embedded Controller cannot be accessed
@@ -19,9 +37,27 @@ Your ThinkPad E14 Gen 7 (Model: 21SX005CIV) experienced a system freeze after ~1
    - Driver support still maturing in Linux kernel
    - **Result:** Graphics driver instability
 
-### Combined Effect
+**Combined Effect:** System runs for hours → Components overheat silently (no monitoring) → GPU becomes unstable → i915 driver hangs → **Complete system freeze**
 
-System runs for hours → Components overheat silently (no monitoring) → GPU becomes unstable → i915 driver hangs → **Complete system freeze**
+### Crash Type 2: Mesa 25.3.4 Regression (Feb 7, 2026)
+
+**New finding:** Bleeding-edge Mesa driver has critical bug:
+
+1. **Mesa 25.3.4 DSB Bug** (Primary)
+   - Display State Buffer polling fails on boot
+   - Monitor configuration breaks when lid closes
+   - System runs in corrupted graphics state
+   - **Result:** Kernel panic after hours (flashing CAPS LOCK)
+
+2. **Lid Close Without Suspend** (Trigger)
+   - Power settings: "No action" on lid close when on AC
+   - GNOME tries to turn off display without suspending
+   - DSB failure causes monitor manager to fail
+   - **Result:** System continues in broken state → eventual panic
+
+**Combined Effect:** Mesa DSB bug → Broken display management → Lid close triggers failures → Kernel panic
+
+**See full investigation:** [`Analysis_Process.md`](./Analysis_Process.md)
 
 ---
 
@@ -56,9 +92,14 @@ System runs for hours → Components overheat silently (no monitoring) → GPU b
 ## Files in This Directory
 
 ### Analysis Reports
-- **`REVISED_hang_analysis.md`** - Complete technical analysis with all findings
+- **`Analysis_Process.md`** - **NEW:** Complete Feb 7 crash investigation with reproducible analysis
+- **`REVISED_hang_analysis.md`** - Original thermal/i915 crash analysis
 - **`analyze_system_hang.py`** - Python script to analyze system logs
 - **`README.md`** - This file
+
+### Mesa Downgrade (Feb 7 Issue)
+- **`downgrade_mesa.sh`** - Script to downgrade Mesa 25.3.4 → 25.2.8
+- **`verify_mesa_fix.sh`** - Verification script to check after downgrade
 
 ### Temperature Monitoring
 - **`temp_monitor_gui.sh`** - GUI temperature monitor with popup warnings (logs every minute)
@@ -73,7 +114,33 @@ System runs for hours → Components overheat silently (no monitoring) → GPU b
 
 ## Quick Start
 
-### 1. Apply Kernel Workarounds (IMPORTANT - Do This First!)
+### 0. Fix DSB Issue (If Experiencing Kernel Panics on Lid Close)
+
+**Symptoms:** Kernel panic (flashing CAPS LOCK) after closing laptop lid
+
+**Root Cause:** Intel i915 Display State Buffer (DSB) poll error - hardware communication failure
+
+**Solution:** Disable DSB via kernel parameter (add `i915.enable_dsb=0` in step 1 above)
+
+**What We Tried:**
+- ❌ Mesa downgrade from 25.3.4 → 25.2.8: DSB error persisted
+- ✓ Kernel parameter `i915.enable_dsb=0`: Fixes the issue
+
+**Why Mesa downgrade didn't work:**
+- DSB is a **kernel driver feature** (i915), not a Mesa userspace feature
+- The error occurs during driver initialization, before Mesa is involved
+- DSB issue exists in both Mesa 25.3.4 and 25.2.8
+
+**Verification after applying kernel parameter:**
+```bash
+sudo dmesg | grep -i 'DSB.*error'  # Should return nothing after reboot
+```
+
+See [`Analysis_Process.md`](./Analysis_Process.md) for complete investigation details.
+
+---
+
+### 1. Apply Kernel Workarounds (REQUIRED)
 
 ```bash
 sudo nano /etc/default/grub
@@ -81,7 +148,7 @@ sudo nano /etc/default/grub
 
 Change this line to:
 ```
-GRUB_CMDLINE_LINUX_DEFAULT="quiet splash acpi_ec_no_wakeup i915.enable_psr=0"
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash acpi_ec_no_wakeup i915.enable_psr=0 i915.enable_dsb=0"
 ```
 
 Then:
@@ -93,6 +160,7 @@ sudo reboot
 **What this does:**
 - `acpi_ec_no_wakeup` - May help with EC communication issues
 - `i915.enable_psr=0` - Disables Panel Self Refresh (fixes cursor update failures)
+- `i915.enable_dsb=0` - **[REQUIRED]** Disables Display State Buffer (fixes DSB poll error and kernel panics)
 
 ### 2. Install Temperature Monitor
 
@@ -278,7 +346,7 @@ apt list --upgradable | grep linux
 - ⏳ Waiting for BIOS fix from Lenovo
 - ⏳ Waiting for better kernel support for Arrow Lake
 
-**Last Updated:** 2026-02-06
+**Last Updated:** 2026-02-07
 
 ---
 
