@@ -68,6 +68,10 @@ last_warning_time=0
 last_critical_time=0
 warning_cooldown=300  # 5 minutes between repeat warnings
 
+# Consecutive-check counters (alert only after 2 checks above threshold)
+prev_above_warn=0
+prev_above_critical=0
+
 # Counter for periodic logging (every minute)
 check_counter=0
 
@@ -102,26 +106,37 @@ while true; do
 
     # Check temperature thresholds and send notifications
     if [ "$max_temp" -ge "$CRITICAL_TEMP" ]; then
-        time_since_last=$((current_time - last_critical_time))
-        if [ "$time_since_last" -ge "$warning_cooldown" ]; then
-            message="⚠️  CRITICAL TEMPERATURE: ${max_temp}°C!\n\nSystem may freeze/hang!\nClose applications and let system cool down.\n\n${temp_readings}"
-            send_notification "critical" "🔥 CRITICAL TEMPERATURE ALERT" "$message"
-            log_message "CRITICAL: Temperature reached ${max_temp}°C"
-            last_critical_time=$current_time
+        if [ "$prev_above_critical" -eq 1 ]; then
+            time_since_last=$((current_time - last_critical_time))
+            if [ "$time_since_last" -ge "$warning_cooldown" ]; then
+                message="⚠️  CRITICAL TEMPERATURE: ${max_temp}°C!\n\nSystem may freeze/hang!\nClose applications and let system cool down.\n\n${temp_readings}"
+                send_notification "critical" "🔥 CRITICAL TEMPERATURE ALERT" "$message"
+                log_message "CRITICAL: Temperature reached ${max_temp}°C"
+                last_critical_time=$current_time
 
-            # Also beep if available
-            if command -v paplay &> /dev/null && [ -f /usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga ]; then
-                paplay /usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga &
+                # Also beep if available
+                if command -v paplay &> /dev/null && [ -f /usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga ]; then
+                    paplay /usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga &
+                fi
             fi
         fi
+        prev_above_critical=1
+        prev_above_warn=1
     elif [ "$max_temp" -ge "$WARN_TEMP" ]; then
-        time_since_last=$((current_time - last_warning_time))
-        if [ "$time_since_last" -ge "$warning_cooldown" ]; then
-            message="Temperature elevated: ${max_temp}°C\n\nEnsure good ventilation.\nConsider using cooling pad.\n\n${temp_readings}"
-            send_notification "normal" "⚠️  Temperature Warning" "$message"
-            log_message "WARNING: Temperature reached ${max_temp}°C"
-            last_warning_time=$current_time
+        if [ "$prev_above_warn" -eq 1 ]; then
+            time_since_last=$((current_time - last_warning_time))
+            if [ "$time_since_last" -ge "$warning_cooldown" ]; then
+                message="Temperature elevated: ${max_temp}°C\n\nEnsure good ventilation.\nConsider using cooling pad.\n\n${temp_readings}"
+                send_notification "normal" "⚠️  Temperature Warning" "$message"
+                log_message "WARNING: Temperature reached ${max_temp}°C"
+                last_warning_time=$current_time
+            fi
         fi
+        prev_above_warn=1
+        prev_above_critical=0
+    else
+        prev_above_warn=0
+        prev_above_critical=0
     fi
 
     # Log current max temp every minute (every 6 checks × 10 seconds)
