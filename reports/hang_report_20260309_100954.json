@@ -1,0 +1,194 @@
+{
+  "timestamp": "2026-03-09T10:09:51.456805",
+  "system_info": {
+    "hostname": "yonatan.d-TP",
+    "kernel": "6.17.0-14-generic",
+    "cmdline": "BOOT_IMAGE=/boot/vmlinuz-6.17.0-14-generic root=UUID=e0d2260a-8b7f-4140-bd09-1515a5d6d711 ro quiet splash acpi_ec_no_wakeup i915.enable_psr=0 i915.enable_dsb=0 vt.handoff=7",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255H",
+    "gpu": "00:02.0 VGA compatible controller: Intel Corporation Arrow Lake-P [Intel Graphics] (rev 03)",
+    "memory": "30Gi",
+    "sleep_mode": "[s2idle]",
+    "is_root": false
+  },
+  "boot_info": {
+    "previous_boot_start": "2026-03-07T18:18:16+02:00",
+    "previous_boot_last_log": "2026-03-09T07:05:01+02:00",
+    "current_boot_start": "2026-03-09T09:55:27+02:00",
+    "uptime_before_hang": "1 day, 12:46:45"
+  },
+  "findings": [
+    {
+      "severity": "warning",
+      "message": "Not running as root - some data (dmesg) will be unavailable. Use: sudo python3 post_hang_analysis.py"
+    },
+    {
+      "severity": "ok",
+      "message": "Kernel param: i915.enable_psr=0 (Panel Self Refresh disabled)"
+    },
+    {
+      "severity": "ok",
+      "message": "Kernel param: i915.enable_dsb=0 (Display State Buffer disabled)"
+    },
+    {
+      "severity": "ok",
+      "message": "Kernel param: acpi_ec_no_wakeup (ACPI EC no-wakeup set)"
+    },
+    {
+      "severity": "info",
+      "message": "Last log before hang: 2026-03-09T07:05:01+02:00"
+    },
+    {
+      "severity": "info",
+      "message": "Reboot after hang:    2026-03-09T09:55:27+02:00"
+    },
+    {
+      "severity": "warning",
+      "message": "Unresponsive gap: 2:50:26 (system was frozen)"
+    },
+    {
+      "severity": "info",
+      "message": "System was up for 1 day, 12:46:45 before hanging"
+    },
+    {
+      "severity": "warning",
+      "message": "Cursor update failures: 2 occurrence(s)"
+    },
+    {
+      "severity": "error",
+      "message": "i915 atomic update failures: 1 occurrence(s)"
+    },
+    {
+      "severity": "warning",
+      "message": "DRM errors: 1 occurrence(s)"
+    },
+    {
+      "severity": "error",
+      "message": "ACPI/EC communication failure: 7 errors"
+    },
+    {
+      "severity": "warning",
+      "message": "thermald started but exited (unsupported CPU)"
+    },
+    {
+      "severity": "info",
+      "message": "Current temps: max=63C, avg=46C (zones: 53C, 20C, 63C, 53C, 46C, 40C, 46C, 29C, 36C, 58C, 58C)"
+    },
+    {
+      "severity": "info",
+      "message": "Last lid event: closed at Mar 08 00:09:24"
+    },
+    {
+      "severity": "warning",
+      "message": "Lid was CLOSED when system hung - lock screen was active on external display"
+    },
+    {
+      "severity": "warning",
+      "message": "System NEVER suspended (s2idle not triggered) - ran continuously"
+    },
+    {
+      "severity": "info",
+      "message": "Last user activity: Mar 08 21:00:01 yonatan.d-TP CRON[61683]: pam_unix(cron:session): session opened"
+    },
+    {
+      "severity": "ok",
+      "message": "No kernel panics or critical messages logged"
+    },
+    {
+      "severity": "ok",
+      "message": "No OOM events"
+    },
+    {
+      "severity": "warning",
+      "message": "Excessive network route changes: 446 (USB ethernet flapping)"
+    }
+  ],
+  "gpu_events": [
+    {
+      "type": "cursor_update_failure",
+      "message": "Mar 07 19:03:14 yonatan.d-TP gnome-shell[2925]: Cursor update failed: drmModeAtomicCommit: Invalid argument"
+    },
+    {
+      "type": "cursor_update_failure",
+      "message": "Mar 08 00:11:25 yonatan.d-TP gnome-shell[2925]: Cursor update failed: drmModeAtomicCommit: Invalid argument"
+    },
+    {
+      "type": "atomic_update_failure",
+      "message": "Mar 07 20:39:05 yonatan.d-TP kernel: i915 0000:00:02.0: [drm] *ERROR* Atomic update failure on pipe B (start=345013 end=345014) time 168 us, min 1073, max 1079, scanline start 1069, end 1070"
+    }
+  ],
+  "thermal_events": [
+    {
+      "type": "acpi_ec_failure",
+      "message": "Mar 07 18:18:16 yonatan.d-TP kernel: ACPI Error: Aborting method \\_SB.PC00.LPCB.EC.ECRD due to previous error (AE_TYPE) (20250404/psparse-529)"
+    },
+    {
+      "type": "acpi_ec_failure",
+      "message": "Mar 07 18:18:16 yonatan.d-TP kernel: thinkpad_acpi: Thinkpad ACPI EC unable to access EC version"
+    },
+    {
+      "type": "acpi_ec_failure",
+      "message": "Mar 07 18:18:16 yonatan.d-TP kernel: ACPI Error: Aborting method \\_SB.PC00.LPCB.EC.ECRD due to previous error (AE_TYPE) (20250404/psparse-529)"
+    },
+    {
+      "type": "acpi_ec_failure",
+      "message": "Mar 07 18:18:16 yonatan.d-TP kernel: thinkpad_acpi: ThinkPad ACPI EC access misbehaving, disabling thermal sensors access"
+    },
+    {
+      "type": "acpi_ec_failure",
+      "message": "Mar 07 18:18:16 yonatan.d-TP kernel: ACPI Error: Aborting method \\_SB.PC00.LPCB.EC.ECRD due to previous error (AE_TYPE) (20250404/psparse-529)"
+    }
+  ],
+  "lid_events": [
+    "Mar 07 18:18:16 yonatan.d-TP kernel: DMAR-IR: Queued invalidation will be enabled to support x2apic and Intr-remapping.",
+    "Mar 07 18:18:16 yonatan.d-TP kernel: iommu: DMA domain TLB invalidation policy: lazy mode",
+    "Mar 07 18:18:16 yonatan.d-TP kernel: DMAR: dmar0: Using Queued invalidation",
+    "Mar 07 18:18:16 yonatan.d-TP kernel: DMAR: dmar1: Using Queued invalidation",
+    "Mar 07 18:18:16 yonatan.d-TP kernel: input: Lid Switch as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0D:00/input/input1",
+    "Mar 07 18:18:16 yonatan.d-TP kernel: ACPI: button: Lid Switch [LID]",
+    "Mar 07 18:18:17 yonatan.d-TP systemd-logind[1259]: Watching system buttons on /dev/input/event1 (Lid Switch)",
+    "Mar 07 18:18:19 yonatan.d-TP xdg-document-portal[1928]: Ignoring invalid max threads value 4294967295 > max (100000).",
+    "Mar 07 18:18:29 yonatan.d-TP gnome-keyring-daemon[2661]: keyring was in an invalid or unrecognized format: /home/yonatan/.local/share/keyrings/default.keyring",
+    "Mar 07 18:18:29 yonatan.d-TP gnome-keyring-d[2661]: keyring was in an invalid or unrecognized format: /home/yonatan/.local/share/keyrings/default.keyring",
+    "Mar 07 18:18:29 yonatan.d-TP xdg-document-portal[2715]: Ignoring invalid max threads value 4294967295 > max (100000).",
+    "Mar 07 18:18:29 yonatan.d-TP user-session-migration[2844]: stderr: rm: cannot remove '.config/autostart/ignore-lid-switch-tweak.desktop': No such file or directory",
+    "Mar 07 18:18:47 yonatan.d-TP tracker-miner-fs-3[4074]: (tracker-extract-3:4074): GLib-GIO-WARNING **: 18:18:47.490: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 07 18:18:57 yonatan.d-TP gnome-shell[2925]: Invalid window geometry for xdg_surface@69. Ignoring for now, but this will result in client termination in the future.",
+    "Mar 07 18:19:51 yonatan.d-TP systemd-logind[1259]: Lid closed.",
+    "Mar 07 18:19:51 yonatan.d-TP gnome-shell[2925]: invalid (NULL) pointer instance",
+    "Mar 07 18:19:51 yonatan.d-TP gnome-shell[2925]: invalid (NULL) pointer instance",
+    "Mar 07 18:19:53 yonatan.d-TP systemd-logind[1259]: Lid opened.",
+    "Mar 07 18:20:31 yonatan.d-TP systemd-logind[1259]: Lid closed.",
+    "Mar 07 18:20:54 yonatan.d-TP tracker-miner-fs-3[5934]: (tracker-extract-3:5934): GLib-GIO-WARNING **: 18:20:54.886: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 07 18:28:41 yonatan.d-TP tracker-miner-fs-3[7224]: (tracker-extract-3:7224): GLib-GIO-WARNING **: 18:28:41.812: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 07 19:03:14 yonatan.d-TP gnome-shell[2925]: Cursor update failed: drmModeAtomicCommit: Invalid argument",
+    "Mar 07 20:07:44 yonatan.d-TP tracker-miner-fs-3[12025]: (tracker-extract-3:12025): GLib-GIO-WARNING **: 20:07:44.442: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 07 20:24:28 yonatan.d-TP tracker-miner-fs-3[12618]: (tracker-extract-3:12618): GLib-GIO-WARNING **: 20:24:28.757: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 07 20:30:01 yonatan.d-TP systemd-logind[1259]: Lid opened.",
+    "Mar 07 20:30:01 yonatan.d-TP gnome-shell[2925]: invalid (NULL) pointer instance",
+    "Mar 07 20:30:01 yonatan.d-TP gnome-shell[2925]: invalid (NULL) pointer instance",
+    "Mar 07 21:01:41 yonatan.d-TP systemd-logind[1259]: Lid closed.",
+    "Mar 07 21:06:57 yonatan.d-TP systemd-logind[1259]: Lid opened.",
+    "Mar 07 22:25:19 yonatan.d-TP tracker-miner-fs-3[21010]: (tracker-extract-3:21010): GLib-GIO-WARNING **: 22:25:19.286: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 07 23:11:36 yonatan.d-TP tracker-miner-fs-3[22531]: (tracker-extract-3:22531): GLib-GIO-WARNING **: 23:11:36.714: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 08 00:09:24 yonatan.d-TP systemd-logind[1259]: Lid closed.",
+    "Mar 08 00:11:25 yonatan.d-TP gnome-shell[2925]: Cursor update failed: drmModeAtomicCommit: Invalid argument"
+  ],
+  "last_activity": "Mar 08 21:00:01 yonatan.d-TP CRON[61683]: pam_unix(cron:session): session opened for user yonatan(uid=1000) by yonatan(uid=0)",
+  "hang_window": {
+    "last_log": "2026-03-09T07:05:01+02:00",
+    "reboot": "2026-03-09T09:55:27+02:00",
+    "gap_seconds": 10226.0,
+    "gap_human": "2:50:26"
+  },
+  "root_cause": "i915 GPU HARD HANG during extended idle operation. The cursor/atomic update failures were precursors. The GPU eventually entered an unrecoverable state, freezing the entire system including input and journald. No kernel panic was logged because the freeze is at the hardware/driver level. ACPI/EC thermal management is broken, compounding the issue.",
+  "severity": "HIGH",
+  "recommendations": [
+    "This is a known i915 driver bug with Arrow Lake-P (Meteor Lake) GPUs",
+    "Kernel params i915.enable_psr=0 and i915.enable_dsb=0 reduce but don't eliminate the issue",
+    "WORKAROUND: Configure system to suspend when idle/lid-closed instead of showing lock screen",
+    "WORKAROUND: Set power settings to turn off display after short idle time",
+    "LONG-TERM: Update to newer kernel with i915 fixes when available",
+    "MONITOR: Run the temperature monitor to catch thermal events that compound GPU instability",
+    "CRITICAL: No thermal management active - system may overheat silently"
+  ]
+}

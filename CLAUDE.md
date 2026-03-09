@@ -43,6 +43,9 @@ Since the ACPI/EC bug prevents normal thermal management, custom monitoring scri
 - **`monitor_temps.sh`**: Interactive console monitor that displays real-time temperatures with color-coded output, refreshing every 2 seconds.
 - **`cpu_stress_test.py`**: Multi-process CPU stress testing tool using math operations (sqrt, sin, cos, powers) to generate heat for thermal testing.
 
+### Post-Hang Analysis
+- **`post_hang_analysis.py`**: Comprehensive post-reboot analysis script designed to run immediately after a hard reset. Analyzes the previous boot's journalctl logs to identify: i915 GPU errors (cursor failures, atomic update failures, DSB errors, GPU hangs), ACPI/EC thermal failures, lid/suspend state, kernel lockups, OOM events, and network interface churn. Outputs root cause determination with severity rating and actionable recommendations. Supports `--save` (JSON report to `reports/`) and `--json` (stdout) output modes.
+
 ### Graphics Driver Diagnostics
 - **`verify_mesa_fix.sh`**: Verification script that checks Mesa/XWayland versions, DSB errors, and package hold status. **IMPORTANT:** Uses `sudo dmesg` for accurate kernel log checking (dmesg requires root on Ubuntu 24.04).
 - **`downgrade_mesa.sh`**: Script that downgrades Mesa and XWayland packages from Kisak PPA to Ubuntu stable versions (attempted fix for DSB errors - was unsuccessful).
@@ -80,6 +83,18 @@ python3 analyze_system_hang.py
 
 # Full analysis with all permissions
 sudo python3 analyze_system_hang.py
+```
+
+### Post-Hang Analysis (run after hard reset)
+```bash
+# Full analysis of previous boot that caused the hang
+sudo python3 post_hang_analysis.py
+
+# Save report as JSON for future reference
+sudo python3 post_hang_analysis.py --save
+
+# Machine-readable JSON output
+sudo python3 post_hang_analysis.py --json
 ```
 
 ### Temperature Monitoring
@@ -170,6 +185,26 @@ sudo apt-mark hold mesa-vulkan-drivers libegl-mesa0 libgl1-mesa-dri \
 To check hold status: `apt-mark showhold | grep -E "mesa|xwayland"`
 
 To unhold if needed: `sudo apt-mark unhold <package-name>`
+
+## Hang Incident Log
+
+### 2026-03-09: i915 GPU Hard Hang During Extended Idle
+
+**Symptom:** Lock screen displayed but keyboard/mouse completely unresponsive. Required hard reset.
+
+**Timeline:**
+- Mar 07 18:18 - Boot (kernel 6.17.0-14-generic, all kernel params applied)
+- Mar 07 19:03 - First `Cursor update failed: drmModeAtomicCommit: Invalid argument`
+- Mar 07 20:39 - `i915 *ERROR* Atomic update failure on pipe B`
+- Mar 08 00:09 - Lid closed (final time), system idle on lock screen
+- Mar 08 00:11 - Second cursor update failure (USB dock reconnection event)
+- Mar 08-09 - System idle for ~31 hours, only network/cron activity
+- Mar 09 07:05 - Last log entry (cron job)
+- Mar 09 09:55 - Hard reset / new boot
+
+**Root Cause:** i915 GPU driver hard hang during extended idle lock screen operation. The cursor/atomic update failures were early precursors of GPU instability. Over ~37 hours of continuous operation with the lock screen actively rendering on the GPU, the driver entered an unrecoverable state that froze the entire system including journald (no panic logged). Contributing factors: no thermal management (ACPI/EC broken), no suspend triggered (s2idle not activated despite lid being closed), and excessive network interface churn (446 route changes from USB ethernet flapping, each triggering compositor updates).
+
+**Analysis:** Run `sudo python3 post_hang_analysis.py` after any future hang. Report saved in `reports/`.
 
 ## Temperature Thresholds
 
