@@ -1,18 +1,20 @@
 # ThinkPad E14 Gen 7 System Hang Analysis & Monitoring
 
-## ⚠️ LATEST UPDATE - February 7, 2026
+## ⚠️ LATEST UPDATE - March 9, 2026
 
-**New crash identified with different root cause!**
+**Third hang type identified: i915 GPU hard hang during extended idle.**
 
-The February 7 crash (flashing CAPS LOCK, kernel panic) was caused by **i915 DSB (Display State Buffer) hardware bug**, not Mesa or thermal issues.
+System froze after ~37 hours of idle operation on the lock screen. Keyboard/mouse completely unresponsive, required hard reset. Root cause: i915 GPU driver entered an unrecoverable state while rendering the lock screen for an extended period, compounded by no thermal management and no auto-suspend.
 
-**See:** [`Analysis_Process.md`](./Analysis_Process.md) for complete investigation and findings.
+**Fixes applied:**
+- ✓ Auto-suspend after 20min idle on AC and battery (was previously disabled on AC)
+- ✓ Lid close = lock only (no suspend), per user preference
+- ✓ Mesa upgraded 25.2.8 → 26.0.1, XWayland 23.2.6 → 24.1.6 (clean boot)
+- ✓ Created `post_hang_analysis.py` for automated post-crash diagnostics
 
-**Quick Summary:**
-- Intel i915 DSB poll error on Arrow Lake-P graphics
-- Causes kernel panic when closing laptop lid without suspend
-- **Solution:** Disable DSB with kernel parameter `i915.enable_dsb=0` (see below)
-- Mesa downgrade was attempted but did NOT fix the issue (DSB is kernel-level)
+**Previous:** February 7 crash (flashing CAPS LOCK, kernel panic) was caused by **i915 DSB (Display State Buffer) hardware bug**.
+
+**See:** [`Analysis_Process.md`](./Analysis_Process.md) for previous investigation details.
 
 ---
 
@@ -39,25 +41,41 @@ Analysis of earlier system logs revealed a **compound hardware/software issue**:
 
 **Combined Effect:** System runs for hours → Components overheat silently (no monitoring) → GPU becomes unstable → i915 driver hangs → **Complete system freeze**
 
-### Crash Type 2: Mesa 25.3.4 Regression (Feb 7, 2026)
+### Crash Type 2: i915 DSB Kernel Panic (Feb 7, 2026)
 
-**New finding:** Bleeding-edge Mesa driver has critical bug:
-
-1. **Mesa 25.3.4 DSB Bug** (Primary)
+1. **i915 DSB Bug** (Primary)
    - Display State Buffer polling fails on boot
    - Monitor configuration breaks when lid closes
    - System runs in corrupted graphics state
    - **Result:** Kernel panic after hours (flashing CAPS LOCK)
 
 2. **Lid Close Without Suspend** (Trigger)
-   - Power settings: "No action" on lid close when on AC
    - GNOME tries to turn off display without suspending
    - DSB failure causes monitor manager to fail
    - **Result:** System continues in broken state → eventual panic
 
-**Combined Effect:** Mesa DSB bug → Broken display management → Lid close triggers failures → Kernel panic
+**Fix:** `i915.enable_dsb=0` kernel parameter. Mesa downgrade was attempted but did NOT fix it (DSB is kernel-level).
 
 **See full investigation:** [`Analysis_Process.md`](./Analysis_Process.md)
+
+### Crash Type 3: Extended Idle GPU Hang (Mar 9, 2026)
+
+1. **i915 GPU Hard Hang** (Primary)
+   - System idle on lock screen for ~37 hours
+   - Cursor/atomic update failures were early precursors
+   - GPU entered unrecoverable state, froze entire system including journald
+   - No kernel panic logged (freeze at hardware/driver level)
+
+2. **No Auto-Suspend on AC** (Enabling Factor)
+   - GNOME `sleep-inactive-ac-type` was set to `nothing`
+   - System never suspended despite being idle for days
+   - GPU continuously rendered lock screen animations
+
+3. **No Thermal Management** (Contributing Factor)
+   - ACPI/EC broken, no fan control
+   - 446 network route changes from USB ethernet flapping, each triggering compositor updates
+
+**Fix:** Auto-suspend after 20min idle on AC. Created `post_hang_analysis.py` for future diagnostics.
 
 ---
 
@@ -68,7 +86,7 @@ Analysis of earlier system logs revealed a **compound hardware/software issue**:
 - **GPU:** Intel Arrow Lake-P Integrated Graphics (i915 driver)
 - **RAM:** 30GB
 - **OS:** Ubuntu 24.04.3 LTS
-- **Kernel:** 6.14.0-37-generic
+- **Kernel:** 6.17.0-14-generic (HWE)
 - **BIOS:** R30ET38W v1.12 (Latest available - 10/30/2025)
 - **EC Firmware:** R30HT38W v1.12
 
@@ -92,14 +110,16 @@ Analysis of earlier system logs revealed a **compound hardware/software issue**:
 ## Files in This Directory
 
 ### Analysis Reports
-- **`Analysis_Process.md`** - **NEW:** Complete Feb 7 crash investigation with reproducible analysis
+- **`Analysis_Process.md`** - Complete Feb 7 crash investigation with reproducible analysis
 - **`REVISED_hang_analysis.md`** - Original thermal/i915 crash analysis
 - **`analyze_system_hang.py`** - Python script to analyze system logs
+- **`post_hang_analysis.py`** - **NEW:** Post-reboot analysis for i915/thermal/idle hangs. Run after hard reset.
+- **`reports/`** - JSON reports from post-hang analysis runs
 - **`README.md`** - This file
 
-### Mesa Downgrade (Feb 7 Issue)
-- **`downgrade_mesa.sh`** - Script to downgrade Mesa 25.3.4 → 25.2.8
-- **`verify_mesa_fix.sh`** - Verification script to check after downgrade
+### Mesa / Graphics
+- **`downgrade_mesa.sh`** - Script to downgrade Mesa (historical, no longer needed)
+- **`verify_mesa_fix.sh`** - Verification script to check GPU/Mesa status
 
 ### Temperature Monitoring
 - **`temp_monitor_gui.sh`** - GUI temperature monitor with popup warnings (logs every minute)
@@ -176,7 +196,28 @@ This will:
 - Show GUI popup warnings when temps exceed 85°C
 - Show critical alerts when temps exceed 90°C
 
-### 3. Update Graphics Stack
+### 3. Configure Auto-Suspend (IMPORTANT)
+
+Prevents i915 GPU from running idle for extended periods (which causes hard hangs):
+
+```bash
+# Auto-suspend after 20min idle (AC and battery)
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'suspend'
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout 1200
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'suspend'
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-timeout 1200
+
+# Lid close: lock only, no suspend
+gsettings set org.gnome.settings-daemon.plugins.power lid-close-ac-action 'nothing'
+gsettings set org.gnome.settings-daemon.plugins.power lid-close-battery-action 'nothing'
+```
+
+Also ensure `/etc/systemd/logind.conf` has:
+```
+HandleLidSwitch=lock
+```
+
+### 4. Update Graphics Stack
 
 ```bash
 sudo apt update
@@ -185,6 +226,14 @@ sudo add-apt-repository ppa:kisak/kisak-mesa
 sudo apt update && sudo apt upgrade
 sudo reboot
 ```
+
+### 5. After a System Hang (Hard Reset)
+
+Run immediately after reboot to capture diagnostics:
+```bash
+sudo python3 post_hang_analysis.py --save
+```
+This analyzes the previous boot's logs for GPU errors, thermal failures, idle state, and more. Reports saved to `reports/`.
 
 ---
 
@@ -339,14 +388,17 @@ apt list --upgradable | grep linux
 
 ## Status
 
-- ✓ Analysis complete
-- ✓ Root causes identified
+- ✓ Analysis complete (3 crash types identified)
+- ✓ Root causes identified for all crash types
 - ✓ Temperature monitoring implemented
-- ✓ Kernel workarounds documented
-- ⏳ Waiting for BIOS fix from Lenovo
-- ⏳ Waiting for better kernel support for Arrow Lake
+- ✓ Kernel workarounds documented and applied
+- ✓ Auto-suspend configured to prevent extended idle GPU hangs
+- ✓ Post-hang analysis script created for future incidents
+- ✓ Mesa upgraded to 26.0.1 (clean boot, no new errors)
+- ⏳ Waiting for BIOS fix from Lenovo (ACPI/EC)
+- ⏳ Waiting for i915 driver fixes for Arrow Lake in future kernels
 
-**Last Updated:** 2026-02-07
+**Last Updated:** 2026-03-09
 
 ---
 

@@ -174,17 +174,39 @@ sudo reboot
 - Trade-off: Slightly higher power consumption, but eliminates DSB errors
 - **Verification:** After reboot, check with `sudo dmesg | grep -i 'DSB.*error'`
 
-### Mesa/XWayland Package Holds
+### Mesa/XWayland Package Status
 
-The following packages are held at older versions to prevent Kisak PPA upgrades:
+**2026-03-09:** Mesa packages were **unholded and upgraded** from 25.2.8 to 26.0.1 (Kisak PPA). XWayland upgraded from 23.2.6 to 24.1.6. The holds were originally placed during DSB troubleshooting but are no longer needed since the DSB issue is in the kernel i915 driver, not Mesa userspace. Clean boot confirmed with Mesa 26.0.1 — no DSB/atomic/cursor errors.
+
+To re-hold if needed:
 ```bash
 sudo apt-mark hold mesa-vulkan-drivers libegl-mesa0 libgl1-mesa-dri \
   mesa-va-drivers mesa-vdpau-drivers libglx-mesa0 mesa-libgallium xwayland
 ```
 
-To check hold status: `apt-mark showhold | grep -E "mesa|xwayland"`
+### Auto-Suspend on Idle (Hang Prevention)
 
-To unhold if needed: `sudo apt-mark unhold <package-name>`
+**2026-03-09:** Configured GNOME to auto-suspend after 20 minutes of inactivity on both AC and battery. This prevents the i915 GPU from running idle for extended periods (which caused the 2026-03-09 hang).
+
+**Settings applied:**
+```bash
+# Auto-suspend after 20min idle (AC and battery)
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'suspend'
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout 1200
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'suspend'
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-timeout 1200
+
+# Lid close: lock only, no suspend (user preference)
+gsettings set org.gnome.settings-daemon.plugins.power lid-close-ac-action 'nothing'
+gsettings set org.gnome.settings-daemon.plugins.power lid-close-battery-action 'nothing'
+```
+
+**logind.conf** (`/etc/systemd/logind.conf`):
+```
+HandleLidSwitch=lock
+```
+
+**Behavior:** Closing the lid locks the screen. After 20 minutes of inactivity, the system suspends (s2idle). This prevents the GPU from rendering the lock screen for days.
 
 ## Hang Incident Log
 
@@ -203,6 +225,11 @@ To unhold if needed: `sudo apt-mark unhold <package-name>`
 - Mar 09 09:55 - Hard reset / new boot
 
 **Root Cause:** i915 GPU driver hard hang during extended idle lock screen operation. The cursor/atomic update failures were early precursors of GPU instability. Over ~37 hours of continuous operation with the lock screen actively rendering on the GPU, the driver entered an unrecoverable state that froze the entire system including journald (no panic logged). Contributing factors: no thermal management (ACPI/EC broken), no suspend triggered (s2idle not activated despite lid being closed), and excessive network interface churn (446 route changes from USB ethernet flapping, each triggering compositor updates).
+
+**Fixes Applied:**
+1. Enabled auto-suspend after 20min idle on AC (was set to 'nothing')
+2. Upgraded Mesa 25.2.8 → 26.0.1, XWayland 23.2.6 → 24.1.6 (clean boot, no new errors)
+3. Removed Mesa/XWayland package holds (no longer needed)
 
 **Analysis:** Run `sudo python3 post_hang_analysis.py` after any future hang. Report saved in `reports/`.
 
