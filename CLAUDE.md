@@ -204,6 +204,7 @@ gsettings set org.gnome.settings-daemon.plugins.power lid-close-battery-action '
 **logind.conf** (`/etc/systemd/logind.conf`):
 ```
 HandleLidSwitch=lock
+HandlePowerKeyLongPress=poweroff
 IdleAction=suspend
 IdleActionSec=20min
 ```

@@ -218,9 +218,12 @@ Prevents i915 GPU / GDM from running idle for extended periods. **Must use login
 Edit `/etc/systemd/logind.conf` and ensure these lines are set (uncommented):
 ```
 HandleLidSwitch=lock
+HandlePowerKeyLongPress=poweroff
 IdleAction=suspend
 IdleActionSec=20min
 ```
+
+- `HandlePowerKeyLongPress=poweroff` — enables long-pressing the power button to force power off (useful when system is partially responsive but logind is still alive; does NOT help for complete freezes where logind itself is hung — use the pinhole reset button for those)
 
 Then **reboot** (never `sudo systemctl restart systemd-logind` — this kills the Wayland session and causes a hang).
 
