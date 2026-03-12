@@ -46,8 +46,11 @@ class PostHangAnalyzer:
             "boot_info": {},
             "findings": [],
             "gpu_events": [],
+            "gpu_events_near_hang": True,
             "thermal_events": [],
             "lid_events": [],
+            "gdm_auth_failures": 0,
+            "gdm_triggered_by_lid_open": False,
             "last_activity": None,
             "hang_window": {},
             "root_cause": None,
@@ -201,6 +204,9 @@ class PostHangAnalyzer:
     def analyze_gpu_events(self):
         self.print_header("i915 GPU / Graphics Analysis")
 
+        # Get hang timestamp to classify "near hang" vs "hours before"
+        hang_ts = self.report.get("hang_window", {}).get("last_log", "")
+
         # Cursor update failures
         cursor_errors = self.run_cmd(
             "journalctl -b -1 --no-pager 2>/dev/null | grep -i 'cursor update failed'"
@@ -214,6 +220,26 @@ class PostHangAnalyzer:
                 self.report["gpu_events"].append({
                     "type": "cursor_update_failure", "message": line.strip()
                 })
+            # Check if any failures occurred within 60 minutes of the hang
+            if hang_ts:
+                try:
+                    t_hang = datetime.fromisoformat(hang_ts.split('.')[0])
+                    near_hang = False
+                    for line in lines:
+                        m = re.search(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})', line)
+                        if m:
+                            t_err = datetime.fromisoformat(m.group(1))
+                            if hasattr(t_hang, 'tzinfo') and t_hang.tzinfo:
+                                import pytz
+                                t_err = t_err.replace(tzinfo=t_hang.tzinfo)
+                            if abs((t_hang - t_err).total_seconds()) < 3600:
+                                near_hang = True
+                                break
+                    self.report["gpu_events_near_hang"] = near_hang
+                    if not near_hang:
+                        self.print_detail("  ↳ All cursor failures occurred >1hr before hang (may not be direct cause)")
+                except Exception:
+                    self.report["gpu_events_near_hang"] = True  # assume worst case
 
         # Atomic update failures
         atomic_errors = self.run_cmd(
@@ -386,6 +412,61 @@ class PostHangAnalyzer:
                 self.report["last_activity"] = last_activity.strip()
                 self.print_finding("info", f"Last user activity: {last_activity.strip()[:80]}")
 
+    # ── GDM / Auth Service Analysis ──────────────────────────────────────
+
+    def analyze_gdm_auth(self):
+        self.print_header("GDM / Authentication Service Analysis")
+
+        # GDM DBus connection failures in gnome-shell (lock screen becomes unresponsive
+        # but mouse still works because the compositor is still running)
+        gdm_errors = self.run_cmd(
+            "journalctl -b -1 --no-pager 2>/dev/null | "
+            "grep -E 'Gio.IOErrorEnum.*connection.*closed|gdm.*error|GDM.*fail|authPrompt|unlockDialog.*error'"
+        )
+        gdm_lines = [l for l in (gdm_errors or "").split('\n') if l.strip()]
+
+        if gdm_lines:
+            self.print_finding("error",
+                f"GDM auth service failures: {len(gdm_lines)} occurrence(s)")
+            self.print_detail("Lock screen may be rendered but keyboard/mouse input is rejected")
+            self.print_detail("(Mouse cursor still moves because compositor is running)")
+            for line in gdm_lines[:5]:
+                self.print_detail(line.strip())
+            self.report["gdm_auth_failures"] = len(gdm_lines)
+            self.report["gdm_auth_lines"] = [l.strip() for l in gdm_lines[:10]]
+        else:
+            self.print_finding("ok", "No GDM auth service failures detected")
+            self.report["gdm_auth_failures"] = 0
+
+        # Check if GDM failures started immediately after a lid-open event
+        if gdm_lines and self.report.get("lid_events"):
+            lid_open_raw = self.run_cmd(
+                "journalctl -b -1 --no-pager -o short-iso 2>/dev/null | grep -i 'lid.*open'"
+            )
+            gdm_first_raw = self.run_cmd(
+                "journalctl -b -1 --no-pager -o short-iso 2>/dev/null | "
+                "grep -E 'Gio.IOErrorEnum.*connection.*closed' | head -1"
+            )
+            if lid_open_raw and gdm_first_raw:
+                try:
+                    lid_lines = [l for l in lid_open_raw.split('\n') if l.strip()]
+                    last_lid_open_ts = None
+                    for ll in lid_lines:
+                        m = re.match(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})', ll)
+                        if m:
+                            last_lid_open_ts = datetime.fromisoformat(m.group(1))
+                    m2 = re.match(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})', gdm_first_raw.strip())
+                    if last_lid_open_ts and m2:
+                        gdm_first_ts = datetime.fromisoformat(m2.group(1))
+                        diff = abs((gdm_first_ts - last_lid_open_ts).total_seconds())
+                        if diff < 60:
+                            self.print_finding("warning",
+                                f"GDM auth failure began {diff:.0f}s after lid open — "
+                                "lid open triggered display reconfiguration that broke GDM DBus connection")
+                            self.report["gdm_triggered_by_lid_open"] = True
+                except Exception:
+                    pass
+
     # ── Kernel / CPU Analysis ───────────────────────────────────────────
 
     def analyze_kernel_cpu(self):
@@ -480,6 +561,9 @@ class PostHangAnalyzer:
         self.print_header("Root Cause Determination")
 
         gpu_errors = len(self.report["gpu_events"])
+        gpu_errors_near_hang = self.report.get("gpu_events_near_hang", True)
+        gdm_failures = self.report.get("gdm_auth_failures", 0)
+        gdm_triggered_by_lid = self.report.get("gdm_triggered_by_lid_open", False)
         has_acpi_failure = any(
             e["type"] == "acpi_ec_failure" for e in self.report["thermal_events"]
         )
@@ -492,25 +576,8 @@ class PostHangAnalyzer:
             for f in self.report["findings"]
         )
 
-        # Determine root cause
-        if gpu_errors > 0 and has_no_panic and has_no_lockup_log:
-            cause = (
-                "i915 GPU HARD HANG during extended idle operation. "
-                "The cursor/atomic update failures were precursors. "
-                "The GPU eventually entered an unrecoverable state, "
-                "freezing the entire system including input and journald. "
-                "No kernel panic was logged because the freeze is at the hardware/driver level."
-            )
-            severity = "HIGH"
-            recommendations = [
-                "This is a known i915 driver bug with Arrow Lake-P (Meteor Lake) GPUs",
-                "Kernel params i915.enable_psr=0 and i915.enable_dsb=0 reduce but don't eliminate the issue",
-                "WORKAROUND: Configure system to suspend when idle/lid-closed instead of showing lock screen",
-                "WORKAROUND: Set power settings to turn off display after short idle time",
-                "LONG-TERM: Update to newer kernel with i915 fixes when available",
-                "MONITOR: Run the temperature monitor to catch thermal events that compound GPU instability",
-            ]
-        elif any(f["severity"] == "error" and "oom" in f["message"].lower() for f in self.report["findings"]):
+        # Determine root cause — order matters: check specific causes first
+        if any(f["severity"] == "error" and "oom" in f["message"].lower() for f in self.report["findings"]):
             cause = "System ran out of memory (OOM). Processes were killed, possibly leading to system instability."
             severity = "HIGH"
             recommendations = [
@@ -526,10 +593,57 @@ class PostHangAnalyzer:
                 "Update kernel to latest available version",
                 "Report to kernel bugzilla with lockup details",
             ]
+        elif gdm_failures > 0 and not gpu_errors_near_hang:
+            # GDM auth failure: lock screen unresponsive but mouse still works
+            # GPU errors exist but are hours old — not the direct cause
+            if gdm_triggered_by_lid:
+                cause = (
+                    "GDM AUTHENTICATION SERVICE FAILURE triggered by lid open / display reconfiguration. "
+                    "When the lid was opened, a display hotplug event caused gnome-shell to lose its "
+                    "DBus connection to the GDM auth service. The lock screen continued rendering "
+                    "(mouse cursor still moved) but could not accept keyboard or click input because "
+                    "the authentication backend was dead. This is NOT an i915 GPU hard hang — the GPU "
+                    "was functioning normally."
+                )
+            else:
+                cause = (
+                    "GDM AUTHENTICATION SERVICE FAILURE. gnome-shell lost its DBus connection to the "
+                    "GDM auth service, leaving the lock screen in an unresponsive state. "
+                    "The GPU compositor kept running (mouse cursor moved) but keyboard/click input "
+                    "was rejected because the authentication backend was dead. "
+                    "This is NOT an i915 GPU hard hang."
+                )
+            severity = "HIGH"
+            recommendations = [
+                "Root cause: GDM/gnome-shell DBus auth connection failure, NOT a GPU hang",
+                "Workaround: Configure auto-suspend via logind (not just GNOME settings) so the "
+                "system suspends before GDM can fail — see logind.conf IdleAction",
+                "Workaround: Avoid leaving system on lock screen for extended periods (>several hours)",
+                "Investigate: USB dock reconnection or lid-open display reconfiguration triggers GDM restart",
+                "Long-term: Monitor https://gitlab.gnome.org/GNOME/gnome-shell/-/issues for GDM DBus fixes",
+                "Note: i915 cursor failures earlier in the session are a separate, pre-existing issue",
+            ]
+        elif gpu_errors > 0 and gpu_errors_near_hang and has_no_panic and has_no_lockup_log:
+            cause = (
+                "i915 GPU HARD HANG during extended idle operation. "
+                "The cursor/atomic update failures were precursors. "
+                "The GPU eventually entered an unrecoverable state, "
+                "freezing the entire system including input and journald. "
+                "No kernel panic was logged because the freeze is at the hardware/driver level."
+            )
+            severity = "HIGH"
+            recommendations = [
+                "This is a known i915 driver bug with Arrow Lake-P (Meteor Lake) GPUs",
+                "Kernel params i915.enable_psr=0 and i915.enable_dsb=0 reduce but don't eliminate the issue",
+                "WORKAROUND: Configure system to suspend when idle instead of showing lock screen indefinitely",
+                "WORKAROUND: Set logind IdleAction=suspend and IdleActionSec=20min (bypasses clamshell inhibitor)",
+                "LONG-TERM: Update to newer kernel with i915 fixes when available",
+                "MONITOR: Run the temperature monitor to catch thermal events that compound GPU instability",
+            ]
         else:
             cause = (
                 "Unable to determine exact root cause. "
-                "The system froze without logging any error, suggesting a hard lockup "
+                "The system froze without logging a clear error, suggesting a hard lockup "
                 "at the hardware or low-level driver level."
             )
             severity = "MEDIUM"
@@ -624,6 +738,7 @@ class PostHangAnalyzer:
         self.analyze_gpu_events()
         self.analyze_thermal()
         self.analyze_idle_state()
+        self.analyze_gdm_auth()
         self.analyze_kernel_cpu()
         self.analyze_network_churn()
         self.show_last_messages()
