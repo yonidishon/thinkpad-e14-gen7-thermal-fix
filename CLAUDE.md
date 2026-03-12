@@ -46,10 +46,6 @@ Since the ACPI/EC bug prevents normal thermal management, custom monitoring scri
 ### Post-Hang Analysis
 - **`post_hang_analysis.py`**: Comprehensive post-reboot analysis script designed to run immediately after a hard reset. Analyzes the previous boot's journalctl logs to identify: i915 GPU errors (cursor failures, atomic update failures, DSB errors, GPU hangs), ACPI/EC thermal failures, lid/suspend state, kernel lockups, OOM events, and network interface churn. Outputs root cause determination with severity rating and actionable recommendations. Supports `--save` (JSON report to `reports/`) and `--json` (stdout) output modes.
 
-### Graphics Driver Diagnostics
-- **`verify_mesa_fix.sh`**: Verification script that checks Mesa/XWayland versions, DSB errors, and package hold status. **IMPORTANT:** Uses `sudo dmesg` for accurate kernel log checking (dmesg requires root on Ubuntu 24.04).
-- **`downgrade_mesa.sh`**: Script that downgrades Mesa and XWayland packages from Kisak PPA to Ubuntu stable versions (attempted fix for DSB errors - was unsuccessful).
-
 ### Installation & Setup
 - **`install_temp_monitor.sh`**: Interactive installer that offers systemd service or autostart desktop entry installation methods for the temperature monitor.
 - **`temp-monitor.service`**: Systemd user service configuration for running the GUI monitor as a background service.
@@ -75,15 +71,6 @@ The `analyze_system_hang.py` script follows this pattern:
 5. Color-coded output using ANSI escape codes (red for errors, yellow for warnings, green for success)
 
 ## Common Commands
-
-### Running System Analysis
-```bash
-# Basic analysis (may have limited info)
-python3 analyze_system_hang.py
-
-# Full analysis with all permissions
-sudo python3 analyze_system_hang.py
-```
 
 ### Post-Hang Analysis (run after hard reset)
 ```bash
@@ -308,4 +295,4 @@ sudo apt install libnotify-bin zenity pulseaudio-utils
 
 - **README.md**: User-facing quick start guide with BIOS update status and temperature guidelines
 - **SETUP_INSTRUCTIONS.md**: Detailed installation and troubleshooting for temperature monitor
-- **REVISED_hang_analysis.md**: Complete technical analysis of the root causes (ACPI/EC bug + i915 instability)
+- **Analysis_Process.md**: Technical investigation of the Feb 7, 2026 DSB crash (historical reference)

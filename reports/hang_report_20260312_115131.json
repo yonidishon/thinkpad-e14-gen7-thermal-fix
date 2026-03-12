@@ -1,0 +1,165 @@
+{
+  "timestamp": "2026-03-12T11:51:28.962925",
+  "system_info": {
+    "hostname": "yonatan.d-TP",
+    "kernel": "6.17.0-14-generic",
+    "cmdline": "BOOT_IMAGE=/boot/vmlinuz-6.17.0-14-generic root=UUID=e0d2260a-8b7f-4140-bd09-1515a5d6d711 ro quiet splash acpi_ec_no_wakeup i915.enable_psr=0 i915.enable_dsb=0 vt.handoff=7",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255H\n                         Intel(R) Core(TM) Ultra 7 255H None CPU @ 2.0GHz",
+    "gpu": "00:02.0 VGA compatible controller: Intel Corporation Arrow Lake-P [Intel Graphics] (rev 03)",
+    "memory": "30Gi",
+    "sleep_mode": "[s2idle]",
+    "is_root": true
+  },
+  "boot_info": {
+    "previous_boot_start": "2026-03-12T09:55:58+02:00",
+    "previous_boot_last_log": "2026-03-12T11:47:39+02:00",
+    "current_boot_start": "2026-03-12T11:48:42+02:00",
+    "uptime_before_hang": "1:51:41"
+  },
+  "findings": [
+    {
+      "severity": "ok",
+      "message": "Kernel param: i915.enable_psr=0 (Panel Self Refresh disabled)"
+    },
+    {
+      "severity": "ok",
+      "message": "Kernel param: i915.enable_dsb=0 (Display State Buffer disabled)"
+    },
+    {
+      "severity": "ok",
+      "message": "Kernel param: acpi_ec_no_wakeup (ACPI EC no-wakeup set)"
+    },
+    {
+      "severity": "info",
+      "message": "Last log before hang: 2026-03-12T11:47:39+02:00"
+    },
+    {
+      "severity": "info",
+      "message": "Reboot after hang:    2026-03-12T11:48:42+02:00"
+    },
+    {
+      "severity": "warning",
+      "message": "Unresponsive gap: 0:01:03 (system was frozen)"
+    },
+    {
+      "severity": "info",
+      "message": "System was up for 1:51:41 before hanging"
+    },
+    {
+      "severity": "ok",
+      "message": "No GPU errors found in previous boot logs"
+    },
+    {
+      "severity": "error",
+      "message": "ACPI/EC communication failure: 7 errors"
+    },
+    {
+      "severity": "warning",
+      "message": "thermald started but exited (unsupported CPU)"
+    },
+    {
+      "severity": "info",
+      "message": "Current temps: max=74C, avg=54C (zones: 73C, 20C, 74C, 73C, 48C, 43C, 48C, 31C, 74C, 74C, 38C)"
+    },
+    {
+      "severity": "info",
+      "message": "Last lid event: opened at Mar 12 11:43:02"
+    },
+    {
+      "severity": "warning",
+      "message": "System NEVER suspended (s2idle not triggered) - ran continuously"
+    },
+    {
+      "severity": "info",
+      "message": "Last user activity: Mar 12 11:42:35 yonatan.d-TP gdm-launch-environment][42241]: pam_unix(gdm-launch"
+    },
+    {
+      "severity": "error",
+      "message": "GDM auth service failures: 4 occurrence(s)"
+    },
+    {
+      "severity": "ok",
+      "message": "No kernel panics or critical messages logged"
+    },
+    {
+      "severity": "ok",
+      "message": "No OOM events"
+    },
+    {
+      "severity": "warning",
+      "message": "Excessive network route changes: 27 (USB ethernet flapping)"
+    }
+  ],
+  "gpu_events": [],
+  "gpu_events_near_hang": true,
+  "thermal_events": [
+    {
+      "type": "acpi_ec_failure",
+      "message": "Mar 12 09:55:58 yonatan.d-TP kernel: ACPI Error: Aborting method \\_SB.PC00.LPCB.EC.ECRD due to previous error (AE_TYPE) (20250404/psparse-529)"
+    },
+    {
+      "type": "acpi_ec_failure",
+      "message": "Mar 12 09:55:58 yonatan.d-TP kernel: thinkpad_acpi: Thinkpad ACPI EC unable to access EC version"
+    },
+    {
+      "type": "acpi_ec_failure",
+      "message": "Mar 12 09:55:58 yonatan.d-TP kernel: ACPI Error: Aborting method \\_SB.PC00.LPCB.EC.ECRD due to previous error (AE_TYPE) (20250404/psparse-529)"
+    },
+    {
+      "type": "acpi_ec_failure",
+      "message": "Mar 12 09:55:58 yonatan.d-TP kernel: thinkpad_acpi: ThinkPad ACPI EC access misbehaving, disabling thermal sensors access"
+    },
+    {
+      "type": "acpi_ec_failure",
+      "message": "Mar 12 09:55:58 yonatan.d-TP kernel: ACPI Error: Aborting method \\_SB.PC00.LPCB.EC.ECRD due to previous error (AE_TYPE) (20250404/psparse-529)"
+    }
+  ],
+  "lid_events": [
+    "Mar 12 09:55:58 yonatan.d-TP kernel: DMAR-IR: Queued invalidation will be enabled to support x2apic and Intr-remapping.",
+    "Mar 12 09:55:58 yonatan.d-TP kernel: iommu: DMA domain TLB invalidation policy: lazy mode",
+    "Mar 12 09:55:58 yonatan.d-TP kernel: DMAR: dmar0: Using Queued invalidation",
+    "Mar 12 09:55:58 yonatan.d-TP kernel: DMAR: dmar1: Using Queued invalidation",
+    "Mar 12 09:55:58 yonatan.d-TP kernel: input: Lid Switch as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0D:00/input/input1",
+    "Mar 12 09:55:58 yonatan.d-TP kernel: ACPI: button: Lid Switch [LID]",
+    "Mar 12 09:55:59 yonatan.d-TP systemd-logind[1163]: Watching system buttons on /dev/input/event1 (Lid Switch)",
+    "Mar 12 09:56:00 yonatan.d-TP xdg-document-portal[1911]: Ignoring invalid max threads value 4294967295 > max (100000).",
+    "Mar 12 09:56:14 yonatan.d-TP gnome-keyring-daemon[2666]: keyring was in an invalid or unrecognized format: /home/yonatan/.local/share/keyrings/default.keyring",
+    "Mar 12 09:56:14 yonatan.d-TP gnome-keyring-d[2666]: keyring was in an invalid or unrecognized format: /home/yonatan/.local/share/keyrings/default.keyring",
+    "Mar 12 09:56:14 yonatan.d-TP xdg-document-portal[2725]: Ignoring invalid max threads value 4294967295 > max (100000).",
+    "Mar 12 09:56:14 yonatan.d-TP user-session-migration[2895]: stderr: rm: cannot remove '.config/autostart/ignore-lid-switch-tweak.desktop': No such file or directory",
+    "Mar 12 09:56:17 yonatan.d-TP gnome-shell[2977]: Invalid window geometry for xdg_surface@69. Ignoring for now, but this will result in client termination in the future.",
+    "Mar 12 09:56:32 yonatan.d-TP tracker-miner-fs-3[4645]: (tracker-extract-3:4645): GLib-GIO-WARNING **: 09:56:32.005: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 12 10:21:08 yonatan.d-TP tracker-miner-fs-3[13668]: (tracker-extract-3:13668): GLib-GIO-WARNING **: 10:21:08.612: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 12 10:25:18 yonatan.d-TP tracker-miner-fs-3[16275]: (tracker-extract-3:16275): GLib-GIO-WARNING **: 10:25:18.314: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 12 10:26:36 yonatan.d-TP tracker-miner-fs-3[16819]: (tracker-extract-3:16819): GLib-GIO-WARNING **: 10:26:36.487: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 12 10:39:40 yonatan.d-TP systemd-logind[1163]: Lid closed.",
+    "Mar 12 11:39:56 yonatan.d-TP gnome-keyring-daemon[2666]: keyring was in an invalid or unrecognized format: /home/yonatan/.local/share/keyrings/default.keyring",
+    "Mar 12 11:39:56 yonatan.d-TP gnome-keyring-d[2666]: keyring was in an invalid or unrecognized format: /home/yonatan/.local/share/keyrings/default.keyring",
+    "Mar 12 11:42:18 yonatan.d-TP systemd-logind[42227]: Watching system buttons on /dev/input/event1 (Lid Switch)",
+    "Mar 12 11:42:18 yonatan.d-TP xdg-document-portal[42356]: Ignoring invalid max threads value 4294967295 > max (100000).",
+    "Mar 12 11:43:02 yonatan.d-TP systemd-logind[42227]: Lid opened."
+  ],
+  "gdm_auth_failures": 4,
+  "gdm_triggered_by_lid_open": false,
+  "last_activity": "Mar 12 11:42:35 yonatan.d-TP gdm-launch-environment][42241]: pam_unix(gdm-launch-environment:session): session closed for user gdm",
+  "hang_window": {
+    "last_log": "2026-03-12T11:47:39+02:00",
+    "reboot": "2026-03-12T11:48:42+02:00",
+    "gap_seconds": 63.0,
+    "gap_human": "0:01:03"
+  },
+  "root_cause": "Unable to determine exact root cause. The system froze without logging a clear error, suggesting a hard lockup at the hardware or low-level driver level. ACPI/EC thermal management is broken, compounding the issue.",
+  "severity": "MEDIUM",
+  "gdm_auth_lines": [
+    "Mar 12 09:56:14 yonatan.d-TP gdm3[1819]: Gdm: on_display_added: assertion 'GDM_IS_REMOTE_DISPLAY (display)' failed",
+    "Mar 12 09:56:16 yonatan.d-TP gdm3[1819]: Gdm: on_display_removed: assertion 'GDM_IS_REMOTE_DISPLAY (display)' failed",
+    "Mar 12 11:42:18 yonatan.d-TP gdm3[1819]: Gdm: on_display_added: assertion 'GDM_IS_REMOTE_DISPLAY (display)' failed",
+    "Mar 12 11:42:36 yonatan.d-TP gdm3[1819]: Gdm: on_display_removed: assertion 'GDM_IS_REMOTE_DISPLAY (display)' failed"
+  ],
+  "recommendations": [
+    "Check for BIOS/firmware updates for this ThinkPad model",
+    "Monitor system temperatures - ACPI/EC bug prevents thermal management",
+    "Consider enabling kdump for future crash analysis",
+    "CRITICAL: No thermal management active - system may overheat silently"
+  ]
+}

@@ -54,9 +54,7 @@ Analysis of earlier system logs revealed a **compound hardware/software issue**:
    - DSB failure causes monitor manager to fail
    - **Result:** System continues in broken state → eventual panic
 
-**Fix:** `i915.enable_dsb=0` kernel parameter. Mesa downgrade was attempted but did NOT fix it (DSB is kernel-level).
-
-**See full investigation:** [`Analysis_Process.md`](./Analysis_Process.md)
+**Fix:** `i915.enable_dsb=0` kernel parameter. Mesa downgrade was attempted but did NOT fix it (DSB is kernel-level). See [`Analysis_Process.md`](./Analysis_Process.md) for full investigation.
 
 ### Crash Type 3: Extended Idle GPU Hang (Mar 9, 2026)
 
@@ -125,16 +123,10 @@ Analysis of earlier system logs revealed a **compound hardware/software issue**:
 ## Files in This Directory
 
 ### Analysis Reports
-- **`Analysis_Process.md`** - Complete Feb 7 crash investigation with reproducible analysis
-- **`REVISED_hang_analysis.md`** - Original thermal/i915 crash analysis
-- **`analyze_system_hang.py`** - Python script to analyze system logs
-- **`post_hang_analysis.py`** - **NEW:** Post-reboot analysis for i915/thermal/idle hangs. Run after hard reset.
+- **`Analysis_Process.md`** - Complete Feb 7 DSB crash investigation (historical reference)
+- **`post_hang_analysis.py`** - Post-reboot analysis script. Run after any hard reset.
 - **`reports/`** - JSON reports from post-hang analysis runs
 - **`README.md`** - This file
-
-### Mesa / Graphics
-- **`downgrade_mesa.sh`** - Script to downgrade Mesa (historical, no longer needed)
-- **`verify_mesa_fix.sh`** - Verification script to check GPU/Mesa status
 
 ### Temperature Monitoring
 - **`temp_monitor_gui.sh`** - GUI temperature monitor with popup warnings (logs every minute)
@@ -148,32 +140,6 @@ Analysis of earlier system logs revealed a **compound hardware/software issue**:
 ---
 
 ## Quick Start
-
-### 0. Fix DSB Issue (If Experiencing Kernel Panics on Lid Close)
-
-**Symptoms:** Kernel panic (flashing CAPS LOCK) after closing laptop lid
-
-**Root Cause:** Intel i915 Display State Buffer (DSB) poll error - hardware communication failure
-
-**Solution:** Disable DSB via kernel parameter (add `i915.enable_dsb=0` in step 1 above)
-
-**What We Tried:**
-- ❌ Mesa downgrade from 25.3.4 → 25.2.8: DSB error persisted
-- ✓ Kernel parameter `i915.enable_dsb=0`: Fixes the issue
-
-**Why Mesa downgrade didn't work:**
-- DSB is a **kernel driver feature** (i915), not a Mesa userspace feature
-- The error occurs during driver initialization, before Mesa is involved
-- DSB issue exists in both Mesa 25.3.4 and 25.2.8
-
-**Verification after applying kernel parameter:**
-```bash
-sudo dmesg | grep -i 'DSB.*error'  # Should return nothing after reboot
-```
-
-See [`Analysis_Process.md`](./Analysis_Process.md) for complete investigation details.
-
----
 
 ### 1. Apply Kernel Workarounds (REQUIRED)
 
@@ -408,7 +374,7 @@ apt list --upgradable | grep linux
 
 ## Status
 
-- ✓ Analysis complete (3 crash types identified)
+- ✓ Analysis complete (4 crash types identified)
 - ✓ Root causes identified for all crash types
 - ✓ Temperature monitoring implemented
 - ✓ Kernel workarounds documented and applied
@@ -418,12 +384,12 @@ apt list --upgradable | grep linux
 - ⏳ Waiting for BIOS fix from Lenovo (ACPI/EC)
 - ⏳ Waiting for i915 driver fixes for Arrow Lake in future kernels
 
-**Last Updated:** 2026-03-09
+**Last Updated:** 2026-03-12
 
 ---
 
 ## Contact
 
 For questions about this analysis or the monitoring tools, refer to:
-- `REVISED_hang_analysis.md` - Technical details
+- `Analysis_Process.md` - Technical details of the Feb 7 DSB crash investigation
 - `SETUP_INSTRUCTIONS.md` - Temperature monitor configuration
