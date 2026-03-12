@@ -1,20 +1,20 @@
 # ThinkPad E14 Gen 7 System Hang Analysis & Monitoring
 
-## ⚠️ LATEST UPDATE - March 9, 2026
+## ⚠️ LATEST UPDATE - March 12, 2026
 
-**Third hang type identified: i915 GPU hard hang during extended idle.**
+**Fourth hang type identified: GDM authentication service failure.**
 
-System froze after ~37 hours of idle operation on the lock screen. Keyboard/mouse completely unresponsive, required hard reset. Root cause: i915 GPU driver entered an unrecoverable state while rendering the lock screen for an extended period, compounded by no thermal management and no auto-suspend.
+Mouse cursor responsive but keyboard/mouse clicks completely unresponsive on lock screen. Root cause: display reconfiguration (lid open) broke gnome-shell's DBus connection to the GDM auth service. This is NOT an i915 GPU hang — the GPU compositor was working fine.
+
+**Also discovered:** GNOME-only auto-suspend does NOT work when an external monitor is connected (clamshell inhibitor). Fixed by adding `IdleAction=suspend` + `IdleActionSec=20min` to `/etc/systemd/logind.conf`.
+
+**IMPORTANT:** Never run `sudo systemctl restart systemd-logind` on a running Wayland session — it kills the graphical session and the resulting login screen will hang.
 
 **Fixes applied:**
-- ✓ Auto-suspend after 20min idle on AC and battery (was previously disabled on AC)
-- ✓ Lid close = lock only (no suspend), per user preference
-- ✓ Mesa upgraded 25.2.8 → 26.0.1, XWayland 23.2.6 → 24.1.6 (clean boot)
-- ✓ Created `post_hang_analysis.py` for automated post-crash diagnostics
+- ✓ logind.conf: `IdleAction=suspend`, `IdleActionSec=20min` (bypasses clamshell inhibitor)
+- ✓ `post_hang_analysis.py` improved: now detects GDM auth failures separately from GPU hangs
 
-**Previous:** February 7 crash (flashing CAPS LOCK, kernel panic) was caused by **i915 DSB (Display State Buffer) hardware bug**.
-
-**See:** [`Analysis_Process.md`](./Analysis_Process.md) for previous investigation details.
+**Previous (March 9):** i915 GPU hard hang after ~37hr idle on lock screen. Auto-suspend was disabled on AC.
 
 ---
 
@@ -76,6 +76,21 @@ Analysis of earlier system logs revealed a **compound hardware/software issue**:
    - 446 network route changes from USB ethernet flapping, each triggering compositor updates
 
 **Fix:** Auto-suspend after 20min idle on AC. Created `post_hang_analysis.py` for future diagnostics.
+
+### Crash Type 4: GDM Auth Failure After Lid Open (Mar 12, 2026)
+
+1. **GDM DBus Connection Failure** (Primary)
+   - Lid opened after extended idle → display reconfiguration triggered
+   - gnome-shell lost DBus connection to GDM auth service 8 seconds later
+   - Lock screen kept rendering (GPU compositor fine), but input was rejected
+   - Mouse cursor moved normally; keyboard and clicks completely unresponsive
+
+2. **No Auto-Suspend Despite Clamshell Idle** (Enabling Factor)
+   - External monitor connected via USB dock → GNOME's `gsd-power` inhibits auto-suspend
+   - `sleep-inactive-ac-type=suspend` in gsettings has NO effect in clamshell mode
+   - System ran 24h without suspending with lid closed
+
+**Fix:** `IdleAction=suspend` + `IdleActionSec=20min` in `/etc/systemd/logind.conf` — operates below the GNOME layer, not affected by clamshell inhibitor.
 
 ---
 
@@ -198,23 +213,25 @@ This will:
 
 ### 3. Configure Auto-Suspend (IMPORTANT)
 
-Prevents i915 GPU from running idle for extended periods (which causes hard hangs):
+Prevents i915 GPU / GDM from running idle for extended periods. **Must use logind — GNOME-only settings don't work in clamshell mode (external monitor connected).**
 
+Edit `/etc/systemd/logind.conf` and ensure these lines are set (uncommented):
+```
+HandleLidSwitch=lock
+IdleAction=suspend
+IdleActionSec=20min
+```
+
+Then **reboot** (never `sudo systemctl restart systemd-logind` — this kills the Wayland session and causes a hang).
+
+Also apply GNOME settings for battery and lid-close behavior:
 ```bash
-# Auto-suspend after 20min idle (AC and battery)
 gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'suspend'
 gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout 1200
 gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'suspend'
 gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-timeout 1200
-
-# Lid close: lock only, no suspend
 gsettings set org.gnome.settings-daemon.plugins.power lid-close-ac-action 'nothing'
 gsettings set org.gnome.settings-daemon.plugins.power lid-close-battery-action 'nothing'
-```
-
-Also ensure `/etc/systemd/logind.conf` has:
-```
-HandleLidSwitch=lock
 ```
 
 ### 4. Update Graphics Stack

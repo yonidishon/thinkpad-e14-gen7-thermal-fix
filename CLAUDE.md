@@ -204,9 +204,13 @@ gsettings set org.gnome.settings-daemon.plugins.power lid-close-battery-action '
 **logind.conf** (`/etc/systemd/logind.conf`):
 ```
 HandleLidSwitch=lock
+IdleAction=suspend
+IdleActionSec=20min
 ```
 
-**Behavior:** Closing the lid locks the screen. After 20 minutes of inactivity, the system suspends (s2idle). This prevents the GPU from rendering the lock screen for days.
+**CRITICAL:** After editing logind.conf, always **reboot** to apply changes. NEVER run `sudo systemctl restart systemd-logind` on a running Wayland session — it kills the entire graphical session and the resulting GDM login screen will hang (2026-03-12 incident).
+
+**Behavior:** Closing the lid locks the screen. After 20 minutes of inactivity, the system suspends (s2idle) via logind — this bypasses the GNOME clamshell inhibitor that prevented GNOME-only auto-suspend from working when an external monitor was connected.
 
 ## Hang Incident Log
 
@@ -232,6 +236,34 @@ HandleLidSwitch=lock
 3. Removed Mesa/XWayland package holds (no longer needed)
 
 **Analysis:** Run `sudo python3 post_hang_analysis.py` after any future hang. Report saved in `reports/`.
+
+### 2026-03-12 (Morning): GDM Auth Failure After Extended Idle With Lid Closed
+
+**Symptom:** Lock screen visible, **mouse responsive**, keyboard and mouse clicks unresponsive. Required hard reset.
+
+**Timeline:**
+- Mar 11 09:01 - Boot
+- Mar 11 10:32 - First cursor update failure (i915, pre-existing issue)
+- Mar 11 20:33 - Second cursor update failure
+- Mar 11 23:37 - Lid closed, system idle overnight
+- Mar 12 09:54:05 - Lid opened (user turned on remote screen)
+- Mar 12 09:54:13 - gnome-shell begins spamming `Gio.IOErrorEnum: The connection is closed` from GDM auth code
+- Mar 12 09:54:24 - Power key pressed (hard reset)
+- Mar 12 09:55:58 - New boot
+
+**Root Cause:** GDM authentication service DBus failure triggered 8 seconds after lid open / display reconfiguration. The GPU compositor kept rendering (mouse cursor moved normally), but the unlock dialog's authentication backend was dead — keyboard and mouse clicks could not be processed. This is NOT an i915 GPU hang. The system ran without suspending for ~24h despite lid being closed for 10h because GNOME's auto-suspend was inhibited by the clamshell+external-monitor detection in gsd-power.
+
+**Fixes Applied:**
+1. Added `IdleAction=suspend` and `IdleActionSec=20min` to `/etc/systemd/logind.conf` — bypasses clamshell inhibitor
+2. Improved `post_hang_analysis.py` to detect GDM auth failures and distinguish from GPU hangs
+
+### 2026-03-12 (Afternoon): Hang Caused by `systemctl restart systemd-logind`
+
+**Symptom:** Ran `sudo systemctl restart systemd-logind` to apply logind.conf changes. This killed the Wayland session, GDM login screen appeared, then hung in the same GDM auth failure state.
+
+**Root Cause:** On Wayland, restarting logind terminates the entire graphical session. The resulting GDM login screen entered the same DBus failure state as the morning incident.
+
+**Lesson:** NEVER run `sudo systemctl restart systemd-logind` on a running Wayland session. Always reboot to apply logind.conf changes.
 
 ## Temperature Thresholds
 

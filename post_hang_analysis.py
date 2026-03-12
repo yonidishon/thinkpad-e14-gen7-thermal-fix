@@ -417,11 +417,19 @@ class PostHangAnalyzer:
     def analyze_gdm_auth(self):
         self.print_header("GDM / Authentication Service Analysis")
 
-        # GDM DBus connection failures in gnome-shell (lock screen becomes unresponsive
-        # but mouse still works because the compositor is still running)
+        # GDM auth failures — several patterns:
+        #  1. gnome-shell loses DBus connection to GDM (Gio.IOErrorEnum)
+        #  2. gdm3 assertion failures on display add/remove (GDM_IS_REMOTE_DISPLAY)
+        #  3. gdm-session-worker exits unexpectedly
         gdm_errors = self.run_cmd(
             "journalctl -b -1 --no-pager 2>/dev/null | "
-            "grep -E 'Gio.IOErrorEnum.*connection.*closed|gdm.*error|GDM.*fail|authPrompt|unlockDialog.*error'"
+            "grep -E '"
+            "Gio.IOErrorEnum.*connection.*closed|"
+            "GDM_IS_REMOTE_DISPLAY.*failed|"
+            "gdm3.*assertion.*failed|"
+            "gdm-session-worker.*error|"
+            "authPrompt|unlockDialog.*error"
+            "'"
         )
         gdm_lines = [l for l in (gdm_errors or "").split('\n') if l.strip()]
 
@@ -445,7 +453,7 @@ class PostHangAnalyzer:
             )
             gdm_first_raw = self.run_cmd(
                 "journalctl -b -1 --no-pager -o short-iso 2>/dev/null | "
-                "grep -E 'Gio.IOErrorEnum.*connection.*closed' | head -1"
+                "grep -E 'Gio.IOErrorEnum.*connection.*closed|GDM_IS_REMOTE_DISPLAY.*failed|gdm3.*assertion.*failed' | head -1"
             )
             if lid_open_raw and gdm_first_raw:
                 try:
@@ -593,7 +601,7 @@ class PostHangAnalyzer:
                 "Update kernel to latest available version",
                 "Report to kernel bugzilla with lockup details",
             ]
-        elif gdm_failures > 0 and not gpu_errors_near_hang:
+        elif gdm_failures > 0 and (gpu_errors == 0 or not gpu_errors_near_hang):
             # GDM auth failure: lock screen unresponsive but mouse still works
             # GPU errors exist but are hours old — not the direct cause
             if gdm_triggered_by_lid:
