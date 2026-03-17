@@ -50,6 +50,7 @@ class PostHangAnalyzer:
             "thermal_events": [],
             "lid_events": [],
             "gdm_auth_failures": 0,
+            "gdm_events_near_hang": False,
             "gdm_triggered_by_lid_open": False,
             "last_activity": None,
             "hang_window": {},
@@ -400,6 +401,19 @@ class PostHangAnalyzer:
             self.print_finding("warning",
                 "System NEVER suspended (s2idle not triggered) - ran continuously")
 
+        # Check for sleep inhibitors blocking IdleAction
+        inhibitors = self.run_cmd(
+            "systemd-inhibit --list --no-legend 2>/dev/null | grep -i sleep"
+        )
+        if inhibitors:
+            lines = [l for l in inhibitors.split('\n') if l.strip()]
+            self.print_finding("warning",
+                f"Sleep inhibitors active: {len(lines)} — these block IdleAction=suspend")
+            for line in lines[:5]:
+                self.print_detail(line.strip())
+            self.print_detail(
+                "Fix: add IdleActionIgnoreInhibitors=yes to /etc/systemd/logind.conf")
+
         # Check if system was idle (no user login activity)
         user_activity = self.run_cmd(
             "journalctl -b -1 --no-pager 2>/dev/null | "
@@ -445,6 +459,33 @@ class PostHangAnalyzer:
         else:
             self.print_finding("ok", "No GDM auth service failures detected")
             self.report["gdm_auth_failures"] = 0
+
+        # Check if GDM errors occurred near the hang (not just at boot time)
+        # Boot-time GDM assertion errors are common and harmless; only flag if near hang
+        hang_ts = self.report.get("hang_window", {}).get("last_log", "")
+        gdm_events_near_hang = bool(gdm_lines)  # default: assume relevant if errors exist
+        if gdm_lines and hang_ts:
+            try:
+                t_hang = datetime.fromisoformat(hang_ts.split('.')[0])
+                near = False
+                for line in gdm_lines:
+                    m = re.match(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})', line)
+                    if m:
+                        t_err = datetime.fromisoformat(m.group(1))
+                        if hasattr(t_hang, 'tzinfo') and t_hang.tzinfo:
+                            t_err = t_err.replace(tzinfo=t_hang.tzinfo)
+                        if abs((t_hang - t_err).total_seconds()) < 7200:  # 2 hours
+                            near = True
+                            break
+                gdm_events_near_hang = near
+                if not near:
+                    self.print_detail(
+                        "  ↳ All GDM errors >2hr before hang (likely boot-time, not the hang cause)")
+            except Exception:
+                pass
+        elif not gdm_lines:
+            gdm_events_near_hang = False
+        self.report["gdm_events_near_hang"] = gdm_events_near_hang
 
         # Check if GDM failures started immediately after a lid-open event
         if gdm_lines and self.report.get("lid_events"):
@@ -601,7 +642,7 @@ class PostHangAnalyzer:
                 "Update kernel to latest available version",
                 "Report to kernel bugzilla with lockup details",
             ]
-        elif gdm_failures > 0 and (gpu_errors == 0 or not gpu_errors_near_hang):
+        elif gdm_failures > 0 and self.report.get("gdm_events_near_hang", True) and (gpu_errors == 0 or not gpu_errors_near_hang):
             # GDM auth failure: lock screen unresponsive but mouse still works
             # GPU errors exist but are hours old — not the direct cause
             if gdm_triggered_by_lid:
@@ -649,17 +690,38 @@ class PostHangAnalyzer:
                 "MONITOR: Run the temperature monitor to catch thermal events that compound GPU instability",
             ]
         else:
-            cause = (
-                "Unable to determine exact root cause. "
-                "The system froze without logging a clear error, suggesting a hard lockup "
-                "at the hardware or low-level driver level."
+            never_suspended = any(
+                "NEVER suspended" in f.get("message", "") for f in self.report["findings"]
             )
-            severity = "MEDIUM"
-            recommendations = [
-                "Check for BIOS/firmware updates for this ThinkPad model",
-                "Monitor system temperatures - ACPI/EC bug prevents thermal management",
-                "Consider enabling kdump for future crash analysis",
-            ]
+            if never_suspended and gpu_errors > 0:
+                cause = (
+                    "EXTENDED IDLE GPU HANG (probable). The system ran continuously without "
+                    "suspending — sleep inhibitors blocked IdleAction=suspend — while having "
+                    "i915 GPU instability earlier in the session. After extended lock screen "
+                    "operation the GPU likely entered an unrecoverable state. Journald froze "
+                    "with the GPU, so no errors were logged near the hang."
+                )
+                severity = "HIGH"
+                recommendations = [
+                    "IMMEDIATE FIX: Add IdleActionIgnoreInhibitors=yes to /etc/systemd/logind.conf",
+                    "Run 'systemd-inhibit --list' to see what is blocking sleep",
+                    "Known blockers on this system: Google Antigravity, GNOME Shell, gsd-power",
+                    "Reboot after logind.conf change (never restart systemd-logind on Wayland)",
+                    "This is the same root cause as the 2026-03-09 and 2026-03-17 hangs",
+                    "LONG-TERM: Update to newer kernel with i915 fixes when available",
+                ]
+            else:
+                cause = (
+                    "Unable to determine exact root cause. "
+                    "The system froze without logging a clear error, suggesting a hard lockup "
+                    "at the hardware or low-level driver level."
+                )
+                severity = "MEDIUM"
+                recommendations = [
+                    "Check for BIOS/firmware updates for this ThinkPad model",
+                    "Monitor system temperatures - ACPI/EC bug prevents thermal management",
+                    "Consider enabling kdump for future crash analysis",
+                ]
 
         if has_acpi_failure:
             cause += " ACPI/EC thermal management is broken, compounding the issue."

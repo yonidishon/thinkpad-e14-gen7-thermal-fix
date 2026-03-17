@@ -194,11 +194,14 @@ HandleLidSwitch=lock
 HandlePowerKeyLongPress=poweroff
 IdleAction=suspend
 IdleActionSec=20min
+IdleActionIgnoreInhibitors=yes
 ```
+
+**`IdleActionIgnoreInhibitors=yes`** is required because multiple apps hold `sleep` inhibitors that block `IdleAction` by default: Google Antigravity, GNOME Shell, gsd-power, gsd-media-keys. Without this, logind will never fire the idle suspend. Use `systemd-inhibit --list` to see active inhibitors.
 
 **CRITICAL:** After editing logind.conf, always **reboot** to apply changes. NEVER run `sudo systemctl restart systemd-logind` on a running Wayland session — it kills the entire graphical session and the resulting GDM login screen will hang (2026-03-12 incident).
 
-**Behavior:** Closing the lid locks the screen. After 20 minutes of inactivity, the system suspends (s2idle) via logind — this bypasses the GNOME clamshell inhibitor that prevented GNOME-only auto-suspend from working when an external monitor was connected.
+**Behavior:** Closing the lid locks the screen. After 20 minutes of inactivity, the system suspends (s2idle) via logind — this bypasses both the GNOME clamshell inhibitor and app sleep inhibitors.
 
 ## Hang Incident Log
 
@@ -252,6 +255,25 @@ IdleActionSec=20min
 **Root Cause:** On Wayland, restarting logind terminates the entire graphical session. The resulting GDM login screen entered the same DBus failure state as the morning incident.
 
 **Lesson:** NEVER run `sudo systemctl restart systemd-logind` on a running Wayland session. Always reboot to apply logind.conf changes.
+
+### 2026-03-17: Extended Idle GPU Hang (Sleep Inhibitors Blocked Suspend)
+
+**Symptom:** System found hanged. Last log Mar 16 07:32:02, reboot Mar 17 14:50:48 — frozen for 1 day 7 hours. Required hard reset.
+
+**Timeline:**
+- Mar 12 11:48:42 - Boot (after logind restart incident reboot)
+- Mar 12–15 - Normal use; several cursor update failures (pre-existing i915 issue)
+- Mar 15 22:40:03 - Lid closed; system idle on lock screen with external monitor
+- Mar 16 07:32:02 - Last log entry (system still alive 8.9 hours after lid close)
+- Mar 17 14:50:48 - Reboot after hard reset
+
+**Root Cause:** Extended idle GPU hang — identical pattern to the 2026-03-09 incident. Despite `IdleAction=suspend` being configured, the system never suspended because sleep inhibitors blocked it. `systemd-inhibit --list` revealed 4 sleep inhibitors: **Google Antigravity** (unknown Google app installed on system), **GNOME Shell**, **gsd-media-keys**, and **gsd-power**. Antigravity holds a persistent sleep inhibitor even when idle/backgrounded.
+
+**Why script misidentified:** `post_hang_analysis.py` reported "GDM auth failure" because 3 GDM assertion errors existed in the logs — but those were from boot time (Mar 12 11:48:48), not near the hang. Script fixed with timing check (GDM errors must be within 2 hours of hang to count).
+
+**Fixes Applied:**
+1. Added `IdleActionIgnoreInhibitors=yes` to `/etc/systemd/logind.conf` — forces suspend after 20min regardless of inhibitors
+2. Fixed `post_hang_analysis.py`: GDM timing check, sleep inhibitor detection, improved "never suspended + GPU errors" root cause pattern
 
 ## Temperature Thresholds
 

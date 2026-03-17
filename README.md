@@ -1,18 +1,16 @@
 # ThinkPad E14 Gen 7 System Hang Analysis & Monitoring
 
-## ⚠️ LATEST UPDATE - March 12, 2026
+## ⚠️ LATEST UPDATE - March 17, 2026
 
-**Fourth hang type identified: GDM authentication service failure.**
+**Fifth hang: Extended idle GPU hang — sleep inhibitors blocked `IdleAction=suspend`.**
 
-Mouse cursor responsive but keyboard/mouse clicks completely unresponsive on lock screen. Root cause: display reconfiguration (lid open) broke gnome-shell's DBus connection to the GDM auth service. This is NOT an i915 GPU hang — the GPU compositor was working fine.
-
-**Also discovered:** GNOME-only auto-suspend does NOT work when an external monitor is connected (clamshell inhibitor). Fixed by adding `IdleAction=suspend` + `IdleActionSec=20min` to `/etc/systemd/logind.conf`.
-
-**IMPORTANT:** Never run `sudo systemctl restart systemd-logind` on a running Wayland session — it kills the graphical session and the resulting login screen will hang.
+Despite `IdleAction=suspend` being configured, the system ran for 3+ days without suspending because **Google Antigravity** and GNOME Shell hold persistent `sleep` inhibitors that block logind's idle action. Fixed by adding `IdleActionIgnoreInhibitors=yes` to logind.conf.
 
 **Fixes applied:**
-- ✓ logind.conf: `IdleAction=suspend`, `IdleActionSec=20min` (bypasses clamshell inhibitor)
-- ✓ `post_hang_analysis.py` improved: now detects GDM auth failures separately from GPU hangs
+- ✓ logind.conf: `IdleActionIgnoreInhibitors=yes` (forces suspend even when inhibitors are held)
+- ✓ `post_hang_analysis.py` improved: GDM timing filter, sleep inhibitor detection, extended-idle pattern
+
+**Previous (March 12):** GDM authentication service failure after lid open. Fixed with `IdleAction=suspend` + `IdleActionSec=20min`.
 
 **Previous (March 9):** i915 GPU hard hang after ~37hr idle on lock screen. Auto-suspend was disabled on AC.
 
@@ -187,6 +185,7 @@ HandleLidSwitch=lock
 HandlePowerKeyLongPress=poweroff
 IdleAction=suspend
 IdleActionSec=20min
+IdleActionIgnoreInhibitors=yes
 ```
 
 - `HandlePowerKeyLongPress=poweroff` — enables long-pressing the power button to force power off (useful when system is partially responsive but logind is still alive; does NOT help for complete freezes where logind itself is hung — use the pinhole reset button for those)
@@ -384,7 +383,7 @@ apt list --upgradable | grep linux
 - ⏳ Waiting for BIOS fix from Lenovo (ACPI/EC)
 - ⏳ Waiting for i915 driver fixes for Arrow Lake in future kernels
 
-**Last Updated:** 2026-03-12
+**Last Updated:** 2026-03-17
 
 ---
 
