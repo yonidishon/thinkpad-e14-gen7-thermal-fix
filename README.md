@@ -1,14 +1,20 @@
 # ThinkPad E14 Gen 7 System Hang Analysis & Monitoring
 
-## ⚠️ LATEST UPDATE - March 17, 2026
+## ✅ MAJOR FIX - March 19, 2026
+
+**BIOS updated (r30uj55wd.iso) — ACPI/EC issue resolved.**
+
+The ACPI/EC communication failure that prevented thermal sensor reading and fan control is fixed. `thinkpad_acpi` now loads fully: `/proc/acpi/ibm/thermal` and `/proc/acpi/ibm/fan` are available. The BIOS controls the fan automatically. Custom temperature monitoring scripts are no longer needed.
+
+**Also: kernel updated to 6.17.0-19-generic** (was 6.17.0-14). The i915 PSR/DSB kernel parameters may also be removable — not yet tested.
+
+---
+
+## ⚠️ Previous update - March 17, 2026
 
 **Fifth hang: Extended idle GPU hang — sleep inhibitors blocked `IdleAction=suspend`.**
 
 Despite `IdleAction=suspend` being configured, the system ran for 3+ days without suspending because **Google Antigravity** and GNOME Shell hold persistent `sleep` inhibitors that block logind's idle action. Fixed by adding `IdleActionIgnoreInhibitors=yes` to logind.conf.
-
-**Fixes applied:**
-- ✓ logind.conf: `IdleActionIgnoreInhibitors=yes` (forces suspend even when inhibitors are held)
-- ✓ `post_hang_analysis.py` improved: GDM timing filter, sleep inhibitor detection, extended-idle pattern
 
 **Previous (March 12):** GDM authentication service failure after lid open. Fixed with `IdleAction=suspend` + `IdleActionSec=20min`.
 
@@ -24,20 +30,18 @@ Your ThinkPad E14 Gen 7 (Model: 21SX005CIV) has experienced multiple types of sy
 
 Analysis of earlier system logs revealed a **compound hardware/software issue**:
 
-1. **ACPI/EC Communication Failure** (Primary)
-   - ThinkPad ACPI Embedded Controller cannot be accessed
-   - Prevents thermal sensor reading
-   - Prevents fan speed control
-   - Thermal daemon cannot run (unsupported CPU)
-   - **Result:** System has NO thermal management
+1. **ACPI/EC Communication Failure** (Primary) - **✅ RESOLVED 2026-03-19 via BIOS update r30uj55wd.iso**
+   - ~~ThinkPad ACPI Embedded Controller cannot be accessed~~
+   - EC now fully operational; BIOS controls fan automatically
+   - `/proc/acpi/ibm/thermal` and `/proc/acpi/ibm/fan` now available
 
 2. **Intel i915 Graphics Driver Issues** (Secondary)
    - Multiple "Cursor update failed: drmModeAtomicCommit" errors
    - Intel Arrow Lake-P (Core Ultra 7 255H) is very new hardware
    - Driver support still maturing in Linux kernel
-   - **Result:** Graphics driver instability
+   - **Result:** Graphics driver instability (mitigated by kernel params + auto-suspend)
 
-**Combined Effect:** System runs for hours → Components overheat silently (no monitoring) → GPU becomes unstable → i915 driver hangs → **Complete system freeze**
+**Previous combined effect:** System runs for hours → Components overheat silently → GPU becomes unstable → **Complete system freeze**
 
 ### Crash Type 2: i915 DSB Kernel Panic (Feb 7, 2026)
 
@@ -67,8 +71,8 @@ Analysis of earlier system logs revealed a **compound hardware/software issue**:
    - System never suspended despite being idle for days
    - GPU continuously rendered lock screen animations
 
-3. **No Thermal Management** (Contributing Factor)
-   - ACPI/EC broken, no fan control
+3. **No Thermal Management** (Contributing Factor, now resolved)
+   - ACPI/EC was broken at the time, no fan control
    - 446 network route changes from USB ethernet flapping, each triggering compositor updates
 
 **Fix:** Auto-suspend after 20min idle on AC. Created `post_hang_analysis.py` for future diagnostics.
@@ -97,23 +101,20 @@ Analysis of earlier system logs revealed a **compound hardware/software issue**:
 - **GPU:** Intel Arrow Lake-P Integrated Graphics (i915 driver)
 - **RAM:** 30GB
 - **OS:** Ubuntu 24.04.3 LTS
-- **Kernel:** 6.17.0-14-generic (HWE)
-- **BIOS:** R30ET38W v1.12 (Latest available - 10/30/2025)
-- **EC Firmware:** R30HT38W v1.12
+- **Kernel:** 6.17.0-19-generic (HWE)
+- **BIOS:** Updated 2026-03-19 via r30uj55wd.iso (was R30ET38W v1.12)
 
 ---
 
 ## BIOS Update Status
 
-✓ **You are already running the latest BIOS version (1.12)**
+✅ **BIOS updated 2026-03-19 — EC issue resolved**
 
-- Latest available from Lenovo: R30ET38W v1.12 / R30HT38W v1.12
-- Your current version: Same ✓
-- **No newer BIOS available as of 2026-02-06**
-- The ACPI/EC bug exists in the latest firmware
-- Lenovo has not yet released a fix for Linux EC access issues
+- Updated via: r30uj55wd.iso (downloaded from Lenovo support)
+- Previous version: R30ET38W v1.12
+- **Result:** ACPI/EC now fully functional. `thinkpad_acpi` loads correctly, fan control and thermal sensors available.
 
-**Check for updates periodically:**
+**Check for future updates periodically:**
 - https://pcsupport.lenovo.com/us/en/products/laptops-and-netbooks/thinkpad-edge-laptops/thinkpad-e14-gen-7-type-21sx-21sy/downloads
 
 ---
@@ -139,15 +140,15 @@ Analysis of earlier system logs revealed a **compound hardware/software issue**:
 
 ## Quick Start
 
-### 1. Apply Kernel Workarounds (REQUIRED)
+### 1. Apply Kernel Workarounds
 
 ```bash
 sudo nano /etc/default/grub
 ```
 
-Change this line to:
+Current line (as of 2026-03-19):
 ```
-GRUB_CMDLINE_LINUX_DEFAULT="quiet splash acpi_ec_no_wakeup i915.enable_psr=0 i915.enable_dsb=0"
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash i915.enable_psr=0 i915.enable_dsb=0"
 ```
 
 Then:
@@ -157,23 +158,28 @@ sudo reboot
 ```
 
 **What this does:**
-- `acpi_ec_no_wakeup` - May help with EC communication issues
 - `i915.enable_psr=0` - Disables Panel Self Refresh (fixes cursor update failures)
-- `i915.enable_dsb=0` - **[REQUIRED]** Disables Display State Buffer (fixes DSB poll error and kernel panics)
+- `i915.enable_dsb=0` - Disables Display State Buffer (fixes DSB poll error and kernel panics)
 
-### 2. Install Temperature Monitor
+**Removed:** `acpi_ec_no_wakeup` - was a workaround for EC issues, no longer needed after BIOS update.
 
+**Note:** Both i915 params may also be removable now that kernel updated to 6.17.0-19 - not yet tested.
+
+### 2. Temperature Monitoring (now optional)
+
+**With the BIOS update, the EC is fixed and the BIOS handles fan control automatically.** The custom monitoring scripts are no longer needed for safety.
+
+To check temperatures directly:
+```bash
+cat /proc/acpi/ibm/thermal   # ThinkPad thermal zones
+cat /proc/acpi/ibm/fan       # Fan status and speed
+```
+
+If you still want GUI popup warnings, the legacy scripts remain available:
 ```bash
 cd /home/yonatan/dev/sys_crash_analysis
 ./install_temp_monitor.sh
 ```
-
-This will:
-- Install required dependencies (libnotify-bin)
-- Let you choose between systemd service or autostart
-- Start the monitor immediately
-- Show GUI popup warnings when temps exceed 85°C
-- Show critical alerts when temps exceed 90°C
 
 ### 3. Configure Auto-Suspend (IMPORTANT)
 
@@ -248,24 +254,16 @@ cat /sys/class/thermal/thermal_zone*/temp | awk '{print $1/1000 " C"}'
 
 ## Known Issues
 
-### ❌ Thermal Management Broken
-```
-thinkpad_acpi: ThinkPad ACPI EC access misbehaving, disabling thermal sensors access
-thinkpad_acpi: fan status and control unavailable
-thermald: Unsupported cpu model or platform
+### ✅ Thermal Management - RESOLVED (2026-03-19)
+
+BIOS update r30uj55wd.iso fixed the ACPI/EC communication failure.
+
+```bash
+cat /proc/acpi/ibm/thermal   # e.g. "temperatures: 51 46 0 45 41 32 0 -128"
+cat /proc/acpi/ibm/fan       # e.g. "status: enabled / speed: 0 / level: auto"
 ```
 
-**Impact:**
-- Cannot read CPU/GPU temperatures via thinkpad_acpi
-- Cannot control fan speed
-- Thermal daemon cannot run
-- System may overheat silently
-
-**Workaround:**
-- Use the temperature monitor scripts in this directory
-- Ensure good physical ventilation
-- Use laptop cooling pad
-- Monitor temps regularly
+Fan is controlled automatically by the BIOS (`level: auto`). No manual intervention needed.
 
 ### ⚠️ Graphics Driver Instability
 ```
@@ -314,17 +312,15 @@ See `SETUP_INSTRUCTIONS.md` for complete details.
 
 ## Expected Outcomes
 
-### With Workarounds Applied:
-- ✓ PSR disabled should eliminate cursor update failures
-- ✓ Temperature monitoring provides early warning
-- ✓ System should run more stable (but still at risk from thermal issues)
-- ⚠️ Fan control still unavailable (hardware limitation)
-- ⚠️ No automatic thermal management (manual monitoring required)
+### Current state (2026-03-19):
+- ✓ EC fixed — fan and thermal sensors working via thinkpad_acpi
+- ✓ Auto-suspend after 20min idle via logind (bypasses sleep inhibitors)
+- ✓ PSR and DSB disabled via kernel params (cursor/DSB errors suppressed)
+- ✓ Post-hang analysis script available for future incidents
+- ⚠️ i915 cursor/atomic update failures still occur — mitigated, not fully eliminated
 
-### Long-term Solution Waiting On:
-- Lenovo BIOS update to fix EC access
-- Kernel updates with better Arrow Lake support
-- Ubuntu 24.04.1+ with newer drivers
+### Still waiting on:
+- Confirmation that kernel 6.17.0-19 fixes i915 PSR/DSB bugs (so params can be removed)
 
 ---
 
@@ -375,15 +371,14 @@ apt list --upgradable | grep linux
 
 - ✓ Analysis complete (4 crash types identified)
 - ✓ Root causes identified for all crash types
-- ✓ Temperature monitoring implemented
+- ✓ BIOS updated — ACPI/EC fixed (2026-03-19)
 - ✓ Kernel workarounds documented and applied
-- ✓ Auto-suspend configured to prevent extended idle GPU hangs
-- ✓ Post-hang analysis script created for future incidents
+- ✓ Auto-suspend configured (logind IdleAction, bypasses sleep inhibitors)
+- ✓ Post-hang analysis script available for future incidents
 - ✓ Mesa upgraded to 26.0.1 (clean boot, no new errors)
-- ⏳ Waiting for BIOS fix from Lenovo (ACPI/EC)
-- ⏳ Waiting for i915 driver fixes for Arrow Lake in future kernels
+- ⏳ i915 PSR/DSB params: pending test on kernel 6.17.0-19 to confirm if removable
 
-**Last Updated:** 2026-03-17
+**Last Updated:** 2026-03-19
 
 ---
 

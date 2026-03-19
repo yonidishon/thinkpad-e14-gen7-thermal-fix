@@ -24,12 +24,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This repository contains diagnostic and monitoring tools for analyzing and mitigating system hangs on a ThinkPad E14 Gen 7 (Model 21SX005CIV) running Ubuntu 24.04. The laptop suffers from two hardware/firmware issues:
+This repository contains diagnostic and monitoring tools for analyzing and mitigating system hangs on a ThinkPad E14 Gen 7 (Model 21SX005CIV) running Ubuntu 24.04. The laptop has experienced hangs due to:
 
-1. **ACPI/EC Communication Failure**: ThinkPad ACPI Embedded Controller access fails, preventing thermal sensor reading and fan control
-2. **Intel i915 Graphics Driver Instability**: Arrow Lake-P (Core Ultra 7 255H) graphics have cursor update failures causing system freezes
-
-The combined effect is that the system can overheat silently (no thermal management) while the GPU driver becomes unstable, leading to complete system freezes after hours of operation.
+1. **ACPI/EC Communication Failure**: ~~ThinkPad ACPI Embedded Controller access fails~~ **RESOLVED 2026-03-19** - BIOS updated via r30uj55wd.iso. EC now fully operational: `/proc/acpi/ibm/fan` and `/proc/acpi/ibm/thermal` available, fan control handled by BIOS automatically.
+2. **Intel i915 Graphics Driver Instability**: Arrow Lake-P (Core Ultra 7 255H) graphics have cursor update failures. Mitigated via kernel parameters; may be resolved in kernel 6.17.0-19 (not yet confirmed).
 
 ## Core Tools
 
@@ -37,11 +35,13 @@ The combined effect is that the system can overheat silently (no thermal managem
 - **`analyze_system_hang.py`**: Comprehensive Python script that analyzes system logs (journalctl, dmesg) to identify causes of freezes. Checks for kernel panics, OOM events, graphics issues, hardware errors, thermal problems, disk errors, and CPU lockups.
 
 ### Temperature Monitoring
-Since the ACPI/EC bug prevents normal thermal management, custom monitoring scripts compensate:
+**Note (2026-03-19):** With the BIOS update fixing the EC, `thinkpad_acpi` now provides proper thermal sensors and fan control. The custom monitoring scripts below are no longer necessary for safety - the BIOS controls the fan automatically. They remain in the repo for reference but can be safely ignored.
 
-- **`temp_monitor_gui.sh`**: Background daemon that monitors `/sys/class/thermal/thermal_zone*/temp` every 10 seconds and shows desktop notifications when temperatures exceed thresholds (warning at 85°C, critical at 90°C). Includes cooldown logic to prevent notification spam.
+- **`temp_monitor_gui.sh`**: Background daemon that monitors `/sys/class/thermal/thermal_zone*/temp` every 10 seconds and shows desktop notifications when temperatures exceed thresholds (warning at 85°C, critical at 90°C).
 - **`monitor_temps.sh`**: Interactive console monitor that displays real-time temperatures with color-coded output, refreshing every 2 seconds.
 - **`cpu_stress_test.py`**: Multi-process CPU stress testing tool using math operations (sqrt, sin, cos, powers) to generate heat for thermal testing.
+
+To check temperatures now use: `cat /proc/acpi/ibm/thermal` or `cat /proc/acpi/ibm/fan`.
 
 ### Post-Hang Analysis
 - **`post_hang_analysis.py`**: Comprehensive post-reboot analysis script designed to run immediately after a hard reset. Analyzes the previous boot's journalctl logs to identify: i915 GPU errors (cursor failures, atomic update failures, DSB errors, GPU hangs), ACPI/EC thermal failures, lid/suspend state, kernel lockups, OOM events, and network interface churn. Outputs root cause determination with severity rating and actionable recommendations. Supports `--save` (JSON report to `reports/`) and `--json` (stdout) output modes.
@@ -125,15 +125,18 @@ python3 cpu_stress_test.py --quick
 
 ### Kernel Parameters (GRUB Configuration)
 
-The laptop requires these kernel parameters in `/etc/default/grub`:
+Current kernel parameters in `/etc/default/grub`:
 ```
-GRUB_CMDLINE_LINUX_DEFAULT="quiet splash acpi_ec_no_wakeup i915.enable_psr=0 i915.enable_dsb=0"
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash i915.enable_psr=0 i915.enable_dsb=0"
 ```
 
 **Parameter explanations:**
-- `acpi_ec_no_wakeup`: Attempts to mitigate EC communication issues
 - `i915.enable_psr=0`: Disables Panel Self Refresh to fix cursor update failures
-- `i915.enable_dsb=0`: **[REQUIRED]** Disables Display State Buffer to fix DSB poll errors
+- `i915.enable_dsb=0`: Disables Display State Buffer to fix DSB poll errors
+
+**Removed 2026-03-19:** `acpi_ec_no_wakeup` - was a workaround for the EC communication failure. No longer needed after BIOS update r30uj55wd.iso fixed the EC.
+
+**Note:** `i915.enable_psr=0` and `i915.enable_dsb=0` may also be removable now that kernel updated to 6.17.0-19 - not yet tested.
 
 After modifying GRUB config, always run:
 ```bash
@@ -286,11 +289,10 @@ IdleActionIgnoreInhibitors=yes
 
 ## Key Limitations
 
-Due to hardware/firmware bugs:
-- **No fan control**: Cannot programmatically adjust fan speed
-- **No thinkpad_acpi sensors**: Standard ThinkPad thermal sensors unavailable
-- **No thermald support**: Thermal daemon doesn't support Arrow Lake CPU
-- **Manual monitoring required**: Must rely on custom scripts to prevent overheating
+- **i915 GPU driver instability**: Cursor/atomic update failures still occur (mitigated by kernel params and 20min auto-suspend). May be resolved in kernel 6.17.0-19 - not yet confirmed.
+- ~~**No fan control**~~: **RESOLVED** - EC fix restores BIOS fan control
+- ~~**No thinkpad_acpi sensors**~~: **RESOLVED** - `/proc/acpi/ibm/thermal` and `/proc/acpi/ibm/fan` now available
+- **thermald**: Still may not support Arrow Lake CPU (less critical now that BIOS handles fan automatically)
 
 ## Testing
 
@@ -303,7 +305,7 @@ When modifying monitoring scripts:
 
 ## Dependencies
 
-- **Python 3**: Required for `analyze_system_hang.py` and `cpu_stress_test.py`
+- **Python 3**: Required for `cpu_stress_test.py` and `post_hang_analysis.py`
 - **libnotify-bin**: Required for desktop notifications (`notify-send`)
 - **zenity** (optional): Used for blocking critical temperature alerts
 - **paplay** (optional): Plays alert sounds for critical warnings
@@ -315,6 +317,6 @@ sudo apt install libnotify-bin zenity pulseaudio-utils
 
 ## Documentation Files
 
-- **README.md**: User-facing quick start guide with BIOS update status and temperature guidelines
-- **SETUP_INSTRUCTIONS.md**: Detailed installation and troubleshooting for temperature monitor
+- **README.md**: User-facing quick start guide with BIOS update status and current system state
+- **SETUP_INSTRUCTIONS.md**: Detailed installation and troubleshooting for temperature monitor (legacy - EC now fixed)
 - **Analysis_Process.md**: Technical investigation of the Feb 7, 2026 DSB crash (historical reference)
