@@ -127,16 +127,15 @@ python3 cpu_stress_test.py --quick
 
 Current kernel parameters in `/etc/default/grub`:
 ```
-GRUB_CMDLINE_LINUX_DEFAULT="quiet splash i915.enable_psr=0 i915.enable_dsb=0"
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
 ```
 
-**Parameter explanations:**
-- `i915.enable_psr=0`: Disables Panel Self Refresh to fix cursor update failures
-- `i915.enable_dsb=0`: Disables Display State Buffer to fix DSB poll errors
+**Removed 2026-03-19:** `acpi_ec_no_wakeup` - EC workaround, no longer needed after BIOS update.
 
-**Removed 2026-03-19:** `acpi_ec_no_wakeup` - was a workaround for the EC communication failure. No longer needed after BIOS update r30uj55wd.iso fixed the EC.
-
-**Note:** `i915.enable_psr=0` and `i915.enable_dsb=0` may also be removable now that kernel updated to 6.17.0-19 - not yet tested.
+**Removed 2026-03-19:** `i915.enable_psr=0` and `i915.enable_dsb=0` - removed after kernel update to 6.17.0-19. Under testing — no errors observed so far but not yet confirmed stable over extended use. Re-add if cursor/DSB errors return:
+```
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash i915.enable_psr=0 i915.enable_dsb=0"
+```
 
 After modifying GRUB config, always run:
 ```bash
@@ -289,7 +288,7 @@ IdleActionIgnoreInhibitors=yes
 
 ## Key Limitations
 
-- **i915 GPU driver instability**: Cursor/atomic update failures still occur (mitigated by kernel params and 20min auto-suspend). May be resolved in kernel 6.17.0-19 - not yet confirmed.
+- **i915 GPU driver instability**: Cursor/atomic update failures previously required `i915.enable_psr=0` and `i915.enable_dsb=0`. These params were removed 2026-03-19 after kernel update to 6.17.0-19 — under observation, no errors yet. Re-add if errors return.
 - ~~**No fan control**~~: **RESOLVED** - EC fix restores BIOS fan control
 - ~~**No thinkpad_acpi sensors**~~: **RESOLVED** - `/proc/acpi/ibm/thermal` and `/proc/acpi/ibm/fan` now available
 - **thermald**: Still may not support Arrow Lake CPU (less critical now that BIOS handles fan automatically)

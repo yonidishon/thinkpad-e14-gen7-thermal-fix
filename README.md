@@ -6,7 +6,7 @@
 
 The ACPI/EC communication failure that prevented thermal sensor reading and fan control is fixed. `thinkpad_acpi` now loads fully: `/proc/acpi/ibm/thermal` and `/proc/acpi/ibm/fan` are available. The BIOS controls the fan automatically. Custom temperature monitoring scripts are no longer needed.
 
-**Also: kernel updated to 6.17.0-19-generic** (was 6.17.0-14). The i915 PSR/DSB kernel parameters may also be removable — not yet tested.
+**Also: kernel updated to 6.17.0-19-generic** (was 6.17.0-14). i915 PSR/DSB kernel parameters removed — no errors observed so far, still under observation.
 
 ---
 
@@ -140,30 +140,21 @@ Analysis of earlier system logs revealed a **compound hardware/software issue**:
 
 ## Quick Start
 
-### 1. Apply Kernel Workarounds
+### 1. Kernel parameters
 
+As of 2026-03-19, no special kernel parameters are required:
+```
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+```
+
+Both `acpi_ec_no_wakeup` (EC workaround) and `i915.enable_psr=0` / `i915.enable_dsb=0` (i915 workarounds) were removed after the BIOS update and kernel upgrade to 6.17.0-19. No errors observed so far — still under observation.
+
+If cursor/DSB errors return, re-add the i915 params:
 ```bash
 sudo nano /etc/default/grub
+# Set: GRUB_CMDLINE_LINUX_DEFAULT="quiet splash i915.enable_psr=0 i915.enable_dsb=0"
+sudo update-grub && sudo reboot
 ```
-
-Current line (as of 2026-03-19):
-```
-GRUB_CMDLINE_LINUX_DEFAULT="quiet splash i915.enable_psr=0 i915.enable_dsb=0"
-```
-
-Then:
-```bash
-sudo update-grub
-sudo reboot
-```
-
-**What this does:**
-- `i915.enable_psr=0` - Disables Panel Self Refresh (fixes cursor update failures)
-- `i915.enable_dsb=0` - Disables Display State Buffer (fixes DSB poll error and kernel panics)
-
-**Removed:** `acpi_ec_no_wakeup` - was a workaround for EC issues, no longer needed after BIOS update.
-
-**Note:** Both i915 params may also be removable now that kernel updated to 6.17.0-19 - not yet tested.
 
 ### 2. Temperature Monitoring (now optional)
 
@@ -315,12 +306,9 @@ See `SETUP_INSTRUCTIONS.md` for complete details.
 ### Current state (2026-03-19):
 - ✓ EC fixed — fan and thermal sensors working via thinkpad_acpi
 - ✓ Auto-suspend after 20min idle via logind (bypasses sleep inhibitors)
-- ✓ PSR and DSB disabled via kernel params (cursor/DSB errors suppressed)
+- ✓ No special kernel parameters needed — i915 params removed, no errors so far
 - ✓ Post-hang analysis script available for future incidents
-- ⚠️ i915 cursor/atomic update failures still occur — mitigated, not fully eliminated
-
-### Still waiting on:
-- Confirmation that kernel 6.17.0-19 fixes i915 PSR/DSB bugs (so params can be removed)
+- ⏳ i915 params removal under observation — re-add if cursor/DSB errors return
 
 ---
 
@@ -376,7 +364,7 @@ apt list --upgradable | grep linux
 - ✓ Auto-suspend configured (logind IdleAction, bypasses sleep inhibitors)
 - ✓ Post-hang analysis script available for future incidents
 - ✓ Mesa upgraded to 26.0.1 (clean boot, no new errors)
-- ⏳ i915 PSR/DSB params: pending test on kernel 6.17.0-19 to confirm if removable
+- ⏳ i915 PSR/DSB params removed — monitoring for regressions
 
 **Last Updated:** 2026-03-19
 
