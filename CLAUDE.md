@@ -127,15 +127,12 @@ python3 cpu_stress_test.py --quick
 
 Current kernel parameters in `/etc/default/grub`:
 ```
-GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash i915.enable_psr=0 i915.enable_dsb=0"
 ```
 
 **Removed 2026-03-19:** `acpi_ec_no_wakeup` - EC workaround, no longer needed after BIOS update.
 
-**Removed 2026-03-19:** `i915.enable_psr=0` and `i915.enable_dsb=0` - removed after kernel update to 6.17.0-19. Under testing — no errors observed so far but not yet confirmed stable over extended use. Re-add if cursor/DSB errors return:
-```
-GRUB_CMDLINE_LINUX_DEFAULT="quiet splash i915.enable_psr=0 i915.enable_dsb=0"
-```
+**[REQUIRED]** `i915.enable_psr=0` and `i915.enable_dsb=0` — i915 atomic update failures confirmed on kernel 6.17.0-19 (2026-03-20). These params are still needed. Not fixed by kernel update.
 
 After modifying GRUB config, always run:
 ```bash
@@ -288,7 +285,7 @@ IdleActionIgnoreInhibitors=yes
 
 ## Key Limitations
 
-- **i915 GPU driver instability**: Cursor/atomic update failures previously required `i915.enable_psr=0` and `i915.enable_dsb=0`. These params were removed 2026-03-19 after kernel update to 6.17.0-19 — under observation, no errors yet. Re-add if errors return.
+- **i915 GPU driver instability**: Atomic update failures confirmed on kernel 6.17.0-19 (2026-03-20). `i915.enable_psr=0` and `i915.enable_dsb=0` are still required. Not a kernel-version-fixable issue at this time.
 - ~~**No fan control**~~: **RESOLVED** - EC fix restores BIOS fan control
 - ~~**No thinkpad_acpi sensors**~~: **RESOLVED** - `/proc/acpi/ibm/thermal` and `/proc/acpi/ibm/fan` now available
 - **thermald**: Still may not support Arrow Lake CPU (less critical now that BIOS handles fan automatically)
