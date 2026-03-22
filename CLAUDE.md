@@ -127,12 +127,14 @@ python3 cpu_stress_test.py --quick
 
 Current kernel parameters in `/etc/default/grub`:
 ```
-GRUB_CMDLINE_LINUX_DEFAULT="quiet splash i915.enable_psr=0 i915.enable_dsb=0"
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash i915.enable_psr=0 i915.enable_dsb=0 i915.enable_dc=0"
 ```
 
 **Removed 2026-03-19:** `acpi_ec_no_wakeup` - EC workaround, no longer needed after BIOS update.
 
 **[REQUIRED]** `i915.enable_psr=0` and `i915.enable_dsb=0` — i915 atomic update failures confirmed on kernel 6.17.0-19 (2026-03-20). These params are still needed. Not fixed by kernel update.
+
+**[REQUIRED]** `i915.enable_dc=0` — added 2026-03-22 after kernel panic ~25min post-resume from s2idle. Disables Display C-states (GPU power gating during suspend/resume). Trade-off: slightly higher idle GPU power draw.
 
 After modifying GRUB config, always run:
 ```bash
@@ -274,6 +276,29 @@ IdleActionIgnoreInhibitors=yes
 1. Added `IdleActionIgnoreInhibitors=yes` to `/etc/systemd/logind.conf` — forces suspend after 20min regardless of inhibitors
 2. Fixed `post_hang_analysis.py`: GDM timing check, sleep inhibitor detection, improved "never suspended + GPU errors" root cause pattern
 
+### 2026-03-22: Kernel Panic After Resume from s2idle
+
+**Symptom:** System completely unresponsive — no keyboard, no mouse. Capslock LED blinking (kernel panic indicator). Lid was closed. Required hard reset.
+
+**Timeline:**
+- Mar 21 19:43 - Boot (kernel 6.17.0-19, i915.enable_psr=0, i915.enable_dsb=0)
+- Mar 21 20:25 - i915 cursor update failure (pre-existing issue, not the root cause)
+- Mar 21 22:52 - logind idle suspend fired — system suspended (IdleActionIgnoreInhibitors=yes working)
+- Mar 22 10:01 - Resumed after 11h sleep — normal
+- Mar 22 11:48 - Suspended again (logind idle)
+- Mar 22 12:14 - Resumed from second suspend
+- Mar 22 12:22 - Login keyring unlocked
+- Mar 22 12:39 - Last log entry
+- Mar 22 ~12:40-13:00 - Kernel panic (capslock blinking), hard reset
+
+**Root Cause:** Kernel panic ~25 minutes after resume from s2idle. Exact panicking subsystem unknown (no kdump installed at the time, pstore empty). Prime suspect: i915 GPU driver failing to cleanly reinitialize Display C-states after suspend/resume. Capslock blinking confirms kernel-level panic, not a userspace or GPU driver soft hang.
+
+**Note:** `IdleActionIgnoreInhibitors=yes` worked correctly — two successful suspend cycles occurred. This is a resume stability issue, not an idle hang.
+
+**Fixes Applied:**
+1. Added `i915.enable_dc=0` to kernel parameters — disables Display C-states to reduce GPU power gating aggressiveness on resume
+2. Installed `linux-crashdump` — enables kdump for future kernel panic capture (`/var/crash/`)
+
 ## Temperature Thresholds
 
 | Temperature | Status | Action |
@@ -285,7 +310,8 @@ IdleActionIgnoreInhibitors=yes
 
 ## Key Limitations
 
-- **i915 GPU driver instability**: Atomic update failures confirmed on kernel 6.17.0-19 (2026-03-20). `i915.enable_psr=0` and `i915.enable_dsb=0` are still required. Not a kernel-version-fixable issue at this time.
+- **i915 GPU driver instability**: Atomic update failures confirmed on kernel 6.17.0-19 (2026-03-20). `i915.enable_psr=0`, `i915.enable_dsb=0`, and `i915.enable_dc=0` are all required. Not a kernel-version-fixable issue at this time.
+- **i915 resume instability**: Kernel panic ~25min after resume from s2idle (2026-03-22). Mitigated with `i915.enable_dc=0`. `linux-crashdump` installed for future panic capture.
 - ~~**No fan control**~~: **RESOLVED** - EC fix restores BIOS fan control
 - ~~**No thinkpad_acpi sensors**~~: **RESOLVED** - `/proc/acpi/ibm/thermal` and `/proc/acpi/ibm/fan` now available
 - **thermald**: Still may not support Arrow Lake CPU (less critical now that BIOS handles fan automatically)

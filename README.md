@@ -1,5 +1,13 @@
 # ThinkPad E14 Gen 7 System Hang Analysis & Monitoring
 
+## ⚠️ Latest update - March 22, 2026
+
+**Sixth hang: Kernel panic ~25min after resume from s2idle (capslock blinking).**
+
+Suspend is now working correctly (`IdleActionIgnoreInhibitors=yes` fired twice overnight). The panic occurred after the second resume. Prime suspect: i915 Display C-states failing to reinitialize after suspend. Fixed by adding `i915.enable_dc=0` kernel parameter. Installed `linux-crashdump` to capture future kernel panics.
+
+---
+
 ## ✅ MAJOR FIX - March 19, 2026
 
 **BIOS updated (r30uj55wd.iso) — ACPI/EC issue resolved.**
@@ -10,7 +18,7 @@ The ACPI/EC communication failure that prevented thermal sensor reading and fan 
 
 ---
 
-## ⚠️ Previous update - March 17, 2026
+## Previous update - March 17, 2026
 
 **Fifth hang: Extended idle GPU hang — sleep inhibitors blocked `IdleAction=suspend`.**
 
@@ -144,7 +152,7 @@ Analysis of earlier system logs revealed a **compound hardware/software issue**:
 
 These kernel parameters are required:
 ```
-GRUB_CMDLINE_LINUX_DEFAULT="quiet splash i915.enable_psr=0 i915.enable_dsb=0"
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash i915.enable_psr=0 i915.enable_dsb=0 i915.enable_dc=0"
 ```
 
 Apply with:
@@ -156,8 +164,9 @@ sudo update-grub && sudo reboot
 **What this does:**
 - `i915.enable_psr=0` - Disables Panel Self Refresh (fixes cursor update failures)
 - `i915.enable_dsb=0` - Disables Display State Buffer (fixes DSB poll errors)
+- `i915.enable_dc=0` - Disables Display C-states (fixes kernel panic after resume from s2idle, added 2026-03-22)
 
-`acpi_ec_no_wakeup` was removed 2026-03-19 (EC fixed by BIOS update). The i915 params were tested without on kernel 6.17.0-19 but atomic update failures appeared within hours — still required.
+`acpi_ec_no_wakeup` was removed 2026-03-19 (EC fixed by BIOS update).
 
 ### 2. Temperature Monitoring (now optional)
 
@@ -306,12 +315,14 @@ See `SETUP_INSTRUCTIONS.md` for complete details.
 
 ## Expected Outcomes
 
-### Current state (2026-03-19):
+### Current state (2026-03-22):
 - ✓ EC fixed — fan and thermal sensors working via thinkpad_acpi
-- ✓ Auto-suspend after 20min idle via logind (bypasses sleep inhibitors)
+- ✓ Auto-suspend after 20min idle via logind (bypasses sleep inhibitors, confirmed working)
 - ✓ Post-hang analysis script available for future incidents
+- ✓ `linux-crashdump` installed — kernel panics now captured to `/var/crash/`
 - ✓ i915 kernel params confirmed still required (tested on 6.17.0-19, atomic failures appeared)
-- ⏳ Waiting for i915 driver fix for Arrow Lake PSR/atomic issues in future kernel
+- ✓ `i915.enable_dc=0` added — mitigates kernel panic after resume from s2idle
+- ⏳ Waiting for i915 driver fix for Arrow Lake PSR/atomic/DC issues in future kernel
 
 ---
 
@@ -360,16 +371,17 @@ apt list --upgradable | grep linux
 
 ## Status
 
-- ✓ Analysis complete (4 crash types identified)
+- ✓ Analysis complete (5 crash types identified, 6 incidents)
 - ✓ Root causes identified for all crash types
 - ✓ BIOS updated — ACPI/EC fixed (2026-03-19)
-- ✓ Kernel workarounds documented and applied
-- ✓ Auto-suspend configured (logind IdleAction, bypasses sleep inhibitors)
+- ✓ Kernel workarounds documented and applied (PSR, DSB, DC)
+- ✓ Auto-suspend configured and confirmed working (logind IdleAction, bypasses sleep inhibitors)
+- ✓ `linux-crashdump` installed for future kernel panic capture
 - ✓ Post-hang analysis script available for future incidents
 - ✓ Mesa upgraded to 26.0.1 (clean boot, no new errors)
-- ⏳ i915 PSR/DSB params still required — not fixed in kernel 6.17.0-19
+- ⏳ i915 resume stability under observation after `enable_dc=0` addition
 
-**Last Updated:** 2026-03-19
+**Last Updated:** 2026-03-22
 
 ---
 
