@@ -122,7 +122,7 @@ class PostHangAnalyzer:
         params_check = {
             "i915.enable_psr=0": "Panel Self Refresh disabled",
             "i915.enable_dsb=0": "Display State Buffer disabled",
-            "acpi_ec_no_wakeup": "ACPI EC no-wakeup set",
+            "i915.enable_dc=0": "Display C-states disabled",
         }
         for param, desc in params_check.items():
             if param in cmdline:
@@ -270,11 +270,13 @@ class PostHangAnalyzer:
                     "type": "dsb_error", "message": line.strip()
                 })
 
-        # GPU hangs / resets (exclude boot-time gpu-manager service messages)
+        # GPU hangs / resets (exclude boot-time gpu-manager, vgaarb, and kdump
+        # kexec setup — kdump command line contains "i915...reset_devices" which
+        # would otherwise match the i915.*reset pattern)
         gpu_hangs = self.run_cmd(
             "journalctl -b -1 --no-pager 2>/dev/null | "
             "grep -iE 'GPU HANG|GPU hang detected|gpu reset|drm.*hang|i915.*hang|i915.*reset|GuC.*error' | "
-            "grep -v 'gpu-manager.service' | grep -v 'vgaarb'"
+            "grep -v 'gpu-manager.service' | grep -v 'vgaarb' | grep -v 'kdump'"
         )
         if gpu_hangs:
             lines = [l for l in gpu_hangs.split('\n') if l.strip()]
@@ -313,17 +315,18 @@ class PostHangAnalyzer:
     def analyze_thermal(self):
         self.print_header("ACPI / Thermal Analysis")
 
-        # ACPI EC errors
+        # ACPI EC errors — match kernel-level EC failures only.
+        # Patterns are anchored to kernel source to avoid false positives from
+        # gnome-shell GJS messages (which contain "object" → "ec" + "access").
         ec_errors = self.run_cmd(
             "journalctl -b -1 --no-pager 2>/dev/null | "
-            "grep -i 'thinkpad_acpi.*misbehaving\\|ACPI.*EC.*error\\|EC.*access'"
+            "grep -iE 'kernel:.*thinkpad_acpi.*misbehav|kernel:.*ACPI.*EC.*(fail|error)|"
+            "thinkpad_acpi:.*EC.*access'"
         )
         if ec_errors:
             lines = [l for l in ec_errors.split('\n') if l.strip()]
             self.print_finding("error",
                 f"ACPI/EC communication failure: {len(lines)} errors")
-            self.print_detail("Thermal sensors and fan control are DISABLED")
-            self.print_detail("System has NO active thermal management!")
             for line in lines[:5]:
                 self.report["thermal_events"].append({
                     "type": "acpi_ec_failure", "message": line.strip()
@@ -713,20 +716,24 @@ class PostHangAnalyzer:
             else:
                 cause = (
                     "Unable to determine exact root cause. "
-                    "The system froze without logging a clear error, suggesting a hard lockup "
-                    "at the hardware or low-level driver level."
+                    "The system froze without logging a clear error. "
+                    "Possible causes: gnome-shell compositor crash (Wayland — if compositor dies, "
+                    "input becomes unresponsive even if kernel is fine), silent kernel lockup "
+                    "at hardware/driver level, or i915 driver freeze without panic."
                 )
                 severity = "MEDIUM"
                 recommendations = [
+                    "Check /var/crash/ for crash dumps: ls /var/crash/",
+                    "If gnome-shell crashed, consider reducing session uptime (reboot after ~7 days)",
                     "Check for BIOS/firmware updates for this ThinkPad model",
-                    "Monitor system temperatures - ACPI/EC bug prevents thermal management",
-                    "Consider enabling kdump for future crash analysis",
+                    "If capslock LED was blinking: kernel panic — check /var/crash/ for kdump",
+                    "If capslock LED was NOT blinking: likely gnome-shell or userspace freeze",
                 ]
 
         if has_acpi_failure:
-            cause += " ACPI/EC thermal management is broken, compounding the issue."
+            cause += " ACPI/EC kernel-level errors detected — EC may be malfunctioning."
             recommendations.append(
-                "CRITICAL: No thermal management active - system may overheat silently"
+                "ACPI/EC errors found — check if BIOS update resolves them"
             )
 
         self.report["root_cause"] = cause

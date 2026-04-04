@@ -1,6 +1,14 @@
 # ThinkPad E14 Gen 7 System Hang Analysis & Monitoring
 
-## ⚠️ Latest update - March 22, 2026
+## ⚠️ Latest update - April 4, 2026
+
+**Seventh hang: gnome-shell compositor freeze during active use.**
+
+No capslock blinking — not a kernel panic. `i915.enable_dc=0` successfully prevented the previous panic type. System had 13 days of uptime; gnome-shell had already crashed once (Apr 2) and crashed again on Apr 4 during active use, 47 minutes after resume. Chrome reported Wayland presentation feedback errors every minute before the hang. No definitive fix yet — periodic reboots (weekly) recommended to reset gnome-shell state.
+
+---
+
+## Previous update - March 22, 2026
 
 **Sixth hang: Kernel panic ~25min after resume from s2idle (capslock blinking).**
 
@@ -315,13 +323,14 @@ See `SETUP_INSTRUCTIONS.md` for complete details.
 
 ## Expected Outcomes
 
-### Current state (2026-03-22):
+### Current state (2026-04-04):
 - ✓ EC fixed — fan and thermal sensors working via thinkpad_acpi
 - ✓ Auto-suspend after 20min idle via logind (bypasses sleep inhibitors, confirmed working)
-- ✓ Post-hang analysis script available for future incidents
+- ✓ Post-hang analysis script available for future incidents (false positives fixed)
 - ✓ `linux-crashdump` installed — kernel panics now captured to `/var/crash/`
 - ✓ i915 kernel params confirmed still required (tested on 6.17.0-19, atomic failures appeared)
 - ✓ `i915.enable_dc=0` added — mitigates kernel panic after resume from s2idle
+- ⏳ gnome-shell Wayland compositor instability after long uptime — under investigation
 - ⏳ Waiting for i915 driver fix for Arrow Lake PSR/atomic/DC issues in future kernel
 
 ---
@@ -371,7 +380,7 @@ apt list --upgradable | grep linux
 
 ## Status
 
-- ✓ Analysis complete (5 crash types identified, 6 incidents)
+- ✓ Analysis complete (6 crash types identified, 7 incidents)
 - ✓ Root causes identified for all crash types
 - ✓ BIOS updated — ACPI/EC fixed (2026-03-19)
 - ✓ Kernel workarounds documented and applied (PSR, DSB, DC)
@@ -381,7 +390,7 @@ apt list --upgradable | grep linux
 - ✓ Mesa upgraded to 26.0.1 (clean boot, no new errors)
 - ⏳ i915 resume stability under observation after `enable_dc=0` addition
 
-**Last Updated:** 2026-03-22
+**Last Updated:** 2026-04-04
 
 ---
 

@@ -299,6 +299,30 @@ IdleActionIgnoreInhibitors=yes
 1. Added `i915.enable_dc=0` to kernel parameters — disables Display C-states to reduce GPU power gating aggressiveness on resume
 2. Installed `linux-crashdump` — enables kdump for future kernel panic capture (`/var/crash/`)
 
+### 2026-04-04: gnome-shell Compositor Freeze During Active Use
+
+**Symptom:** System completely unresponsive — no keyboard, no mouse. No capslock blinking (no kernel panic). System was actively in use. Required hard reset.
+
+**Timeline:**
+- Mar 22 13:11 - Boot (kernel 6.17.0-20, all three i915 params active)
+- Mar 22–Apr 03 - Normal use, 13 days of uptime
+- Apr 03 19:15 - Suspended (logind idle)
+- Apr 04 17:55 - Resumed cleanly after 22.6h sleep
+- Apr 04 18:33 - Chrome begins reporting Wayland presentation feedback errors every minute
+- Apr 04 18:42 - Last log entry
+- Apr 04 ~19:30 - Hard reset
+
+**Root Cause:** gnome-shell compositor crash/freeze during active use, approximately 47 minutes after resume. No kernel panic (no capslock blink, no kdump written) — `i915.enable_dc=0` successfully prevented the previous kernel panic type. Chrome's repeated `wayland_frame_manager: The server has buggy presentation feedback` errors indicate the Wayland compositor (gnome-shell) was failing to respond to presentation protocol requests in the minutes before the hang. gnome-shell had already crashed once on Apr 2 during the same boot (crash dump in `/var/crash/`). A second crash on Apr 4 likely failed to auto-restart.
+
+**Note:** This is a different crash type from all previous hangs. The i915 kernel params are working (no kernel-level errors). The problem is in userspace (gnome-shell on Wayland). After 13 days of uptime, gnome-shell accumulated state and became unstable.
+
+**Fixes Applied:**
+1. Fixed `post_hang_analysis.py` false positives: EC grep pattern, kdump/GPU hang false match, outdated recommendations
+
+**Potential Workaround:**
+- Periodic reboots (e.g., weekly) to reset gnome-shell state — avoids long-uptime accumulation
+- No definitive fix yet; need more data
+
 ## Temperature Thresholds
 
 | Temperature | Status | Action |
