@@ -204,6 +204,38 @@ IdleActionIgnoreInhibitors=yes
 
 **Behavior:** Closing the lid locks the screen. After 20 minutes of inactivity, the system suspends (s2idle) via logind — this bypasses both the GNOME clamshell inhibitor and app sleep inhibitors.
 
+### Suspend Guard for Long-Running Tasks
+
+**2026-04-06:** Since `IdleActionIgnoreInhibitors=yes` bypasses normal sleep inhibitors, a systemd `ExecCondition` override blocks suspend when specific processes (e.g., Shotcut video export) are running.
+
+**Script:** `/usr/lib/systemd/system-sleep/check-exports.sh`
+```bash
+#!/bin/bash
+case $1 in
+    pre)
+        if pgrep -x melt-7 > /dev/null || pgrep -x ffmpeg > /dev/null; then
+            echo "Blocking suspend: video export in progress" | systemd-cat -t check-exports
+            exit 1
+        fi
+        ;;
+esac
+exit 0
+```
+
+**Override:** `/etc/systemd/system/systemd-suspend.service.d/check-exports.conf`
+```ini
+[Service]
+ExecCondition=/usr/lib/systemd/system-sleep/check-exports.sh pre
+```
+
+**How it works:** `ExecCondition` runs before `systemd-suspend.service` starts. If it returns non-zero, the suspend is skipped entirely. logind will retry after another 20min idle period.
+
+**Note:** The sleep hook scripts in `/usr/lib/systemd/system-sleep/` alone are NOT sufficient — newer systemd versions treat them as informational only and proceed with suspend regardless of exit code. The `ExecCondition` override is required.
+
+**Shotcut details:** Installed via snap (`/snap/shotcut/`). During export, runs `melt-7` (MLT framework renderer), which internally uses ffmpeg. The process name is `melt-7`, not `melt`.
+
+**To add more processes:** Add more `pgrep` checks in the script (e.g., `pgrep -x handbrake`), then `sudo systemctl daemon-reload`.
+
 ## Hang Incident Log
 
 ### 2026-03-09: i915 GPU Hard Hang During Extended Idle

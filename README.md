@@ -219,7 +219,46 @@ gsettings set org.gnome.settings-daemon.plugins.power lid-close-ac-action 'nothi
 gsettings set org.gnome.settings-daemon.plugins.power lid-close-battery-action 'nothing'
 ```
 
-### 4. Update Graphics Stack
+### 4. Suspend guard for long-running tasks (optional)
+
+Since `IdleActionIgnoreInhibitors=yes` bypasses normal sleep inhibitors, a systemd override blocks suspend when video exports (or other long tasks) are running.
+
+Create the check script:
+```bash
+sudo nano /usr/lib/systemd/system-sleep/check-exports.sh
+```
+```bash
+#!/bin/bash
+case $1 in
+    pre)
+        if pgrep -x melt-7 > /dev/null || pgrep -x ffmpeg > /dev/null; then
+            echo "Blocking suspend: video export in progress" | systemd-cat -t check-exports
+            exit 1
+        fi
+        ;;
+esac
+exit 0
+```
+```bash
+sudo chmod +x /usr/lib/systemd/system-sleep/check-exports.sh
+```
+
+Create the systemd override:
+```bash
+sudo mkdir -p /etc/systemd/system/systemd-suspend.service.d
+sudo nano /etc/systemd/system/systemd-suspend.service.d/check-exports.conf
+```
+```ini
+[Service]
+ExecCondition=/usr/lib/systemd/system-sleep/check-exports.sh pre
+```
+```bash
+sudo systemctl daemon-reload
+```
+
+To add more processes, add `pgrep` checks to the script and run `sudo systemctl daemon-reload`.
+
+### 5. Update Graphics Stack
 
 ```bash
 sudo apt update
@@ -229,7 +268,7 @@ sudo apt update && sudo apt upgrade
 sudo reboot
 ```
 
-### 5. After a System Hang (Hard Reset)
+### 6. After a System Hang (Hard Reset)
 
 Run immediately after reboot to capture diagnostics:
 ```bash
