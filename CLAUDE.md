@@ -127,10 +127,12 @@ python3 cpu_stress_test.py --quick
 
 Current kernel parameters in `/etc/default/grub`:
 ```
-GRUB_CMDLINE_LINUX_DEFAULT="quiet splash i915.enable_psr=0 i915.enable_dsb=0 i915.enable_dc=0"
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash i915.enable_psr=0 i915.enable_dsb=0 i915.enable_dc=0 split_lock_detect=off"
 ```
 
 **Removed 2026-03-19:** `acpi_ec_no_wakeup` - EC workaround, no longer needed after BIOS update.
+
+**[APPLIED 2026-06-28]** `split_lock_detect=off` — disables split-lock detection so VMware Windows-VM split-lock traps no longer take a host-wide bus lock that stalls every core. Added after the 2026-06-27 compositor freeze. Confirmed active in `/proc/cmdline`.
 
 **[REQUIRED]** `i915.enable_psr=0` and `i915.enable_dsb=0` — i915 atomic update failures confirmed on kernel 6.17.0-19 (2026-03-20). These params are still needed. Not fixed by kernel update.
 
@@ -226,7 +228,7 @@ esac
 exit 0
 ```
 
-**⚠️ The `claude` block is a known liability:** it blocks idle-suspend during *every* Claude Code session, which defeats the idle-suspend hang-prevention strategy and keeps the machine on the extended-uptime compositor-accumulation path. It contributed to the 2026-06-27 hang being unrecoverable (41 idle-suspend attempts skipped). Consider removing or narrowing it.
+**[REMOVED 2026-06-28] The `claude` block:** it blocked idle-suspend during *every* Claude Code session, which defeated the idle-suspend hang-prevention strategy and kept the machine on the extended-uptime compositor-accumulation path. It contributed to the 2026-06-27 hang being unrecoverable (41 idle-suspend attempts skipped). Removed; only the `melt-7`/`ffmpeg` video-export block remains. The script block shown above reflects the historical state — the live script no longer contains the `claude` check.
 
 **Override:** `/etc/systemd/system/systemd-suspend.service.d/check-exports.conf`
 ```ini
@@ -448,9 +450,11 @@ journalctl --since "today" | grep -c "meta_window_set_stack_position_no_sync"
 **Fixes Applied:**
 1. Documented this as a VM-load-triggered variant of the compositor-freeze family.
 
-**Recommended (not yet applied — require user action):**
-1. **Disable split-lock detection** to remove host-wide stalls when running VMs/Windows guests (most targeted fix for this trigger). Add `split_lock_detect=off` to `GRUB_CMDLINE_LINUX_DEFAULT` in `/etc/default/grub`, then `sudo update-grub && sudo reboot`.
-2. **Review the `claude` block in `check-exports.sh`** (`/usr/lib/systemd/system-sleep/check-exports.sh`). It blocks idle-suspend during *every* Claude Code session, defeating the idle-suspend hang-prevention strategy and leaving the machine on the extended-uptime compositor-accumulation path. Consider removing it or narrowing the condition.
+**Fixes applied 2026-06-28:**
+1. **Disabled split-lock detection** — added `split_lock_detect=off` to `GRUB_CMDLINE_LINUX_DEFAULT`, ran `update-grub`, rebooted. Confirmed active in `/proc/cmdline`. Removes host-wide stalls when running VMs/Windows guests (most targeted fix for this trigger).
+2. **Removed the `claude` block from `check-exports.sh`** — idle-suspend is no longer defeated during Claude Code sessions. Only the `melt-7`/`ffmpeg` video-export block remains.
+
+**Still recommended:**
 3. **Periodic reboots** still apply — uptime was ~3.4 days (Jun 24→27) at freeze.
 
 ## Temperature Thresholds
@@ -467,7 +471,7 @@ journalctl --since "today" | grep -c "meta_window_set_stack_position_no_sync"
 - **i915 GPU driver instability**: Atomic update failures confirmed on kernel 6.17.0-19 (2026-03-20). `i915.enable_psr=0`, `i915.enable_dsb=0`, and `i915.enable_dc=0` are all required. Not a kernel-version-fixable issue at this time.
 - **i915 resume instability**: Kernel panic ~25min after resume from s2idle (2026-03-22). Mitigated with `i915.enable_dc=0`. `linux-crashdump` installed for future panic capture.
 - **Mutter window-stack corruption (Wayland)**: `meta_window_set_stack_position_no_sync` assertion accumulates over multi-day uptime, eventually freezes compositor (2026-05-17). Upstream bug LP #2064709 unfixed in mutter 46.x. Mitigations applied: disabled Tiling Assistant, replaced snap LibreOffice. Long-uptime risk remains; consider weekly reboots if recurrences continue.
-- **Compositor freeze under heavy VM load (Wayland)**: gnome-shell/mutter hangs (no kernel panic) under VMware Windows-VM load; correlated with VM split-lock trap bursts (2026-06-27). Recommended mitigation: `split_lock_detect=off` kernel param. Idle-suspend recovery is currently defeated by a `claude`-process block in `check-exports.sh`.
+- **Compositor freeze under heavy VM load (Wayland)**: gnome-shell/mutter hangs (no kernel panic) under VMware Windows-VM load; correlated with VM split-lock trap bursts (2026-06-27). Mitigated 2026-06-28: `split_lock_detect=off` kernel param applied, and the `claude`-process block removed from `check-exports.sh` so idle-suspend recovery is no longer defeated.
 - ~~**No fan control**~~: **RESOLVED** - EC fix restores BIOS fan control
 - ~~**No thinkpad_acpi sensors**~~: **RESOLVED** - `/proc/acpi/ibm/thermal` and `/proc/acpi/ibm/fan` now available
 - **thermald**: Still may not support Arrow Lake CPU (less critical now that BIOS handles fan automatically)
