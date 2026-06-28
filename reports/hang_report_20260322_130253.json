@@ -1,0 +1,163 @@
+{
+  "timestamp": "2026-03-22T13:02:49.259270",
+  "system_info": {
+    "hostname": "yonatan.d-TP",
+    "kernel": "6.17.0-19-generic",
+    "cmdline": "BOOT_IMAGE=/boot/vmlinuz-6.17.0-19-generic root=UUID=e0d2260a-8b7f-4140-bd09-1515a5d6d711 ro quiet splash i915.enable_psr=0 i915.enable_dsb=0 vt.handoff=7",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255H\n                         Intel(R) Core(TM) Ultra 7 255H None CPU @ 2.0GHz",
+    "gpu": "00:02.0 VGA compatible controller: Intel Corporation Arrow Lake-P [Intel Graphics] (rev 03)",
+    "memory": "30Gi",
+    "sleep_mode": "[s2idle]",
+    "is_root": true
+  },
+  "boot_info": {
+    "previous_boot_start": "2026-03-21T19:43:37+02:00",
+    "previous_boot_last_log": "2026-03-22T12:39:37+02:00",
+    "current_boot_start": "2026-03-22T13:00:08+02:00",
+    "uptime_before_hang": "16:56:00"
+  },
+  "findings": [
+    {
+      "severity": "ok",
+      "message": "Kernel param: i915.enable_psr=0 (Panel Self Refresh disabled)"
+    },
+    {
+      "severity": "ok",
+      "message": "Kernel param: i915.enable_dsb=0 (Display State Buffer disabled)"
+    },
+    {
+      "severity": "warning",
+      "message": "Missing kernel param: acpi_ec_no_wakeup (ACPI EC no-wakeup set)"
+    },
+    {
+      "severity": "info",
+      "message": "Last log before hang: 2026-03-22T12:39:37+02:00"
+    },
+    {
+      "severity": "info",
+      "message": "Reboot after hang:    2026-03-22T13:00:08+02:00"
+    },
+    {
+      "severity": "warning",
+      "message": "Unresponsive gap: 0:20:31 (system was frozen)"
+    },
+    {
+      "severity": "info",
+      "message": "System was up for 16:56:00 before hanging"
+    },
+    {
+      "severity": "warning",
+      "message": "Cursor update failures: 1 occurrence(s)"
+    },
+    {
+      "severity": "warning",
+      "message": "thermald started but exited (unsupported CPU)"
+    },
+    {
+      "severity": "info",
+      "message": "Current temps: max=75C, avg=54C (zones: 75C, 20C, 35C, 75C, 50C, 42C, 50C, 30C, 73C, 73C, 73C)"
+    },
+    {
+      "severity": "info",
+      "message": "Last lid event: closed at Mar 21 22:24:02"
+    },
+    {
+      "severity": "warning",
+      "message": "Lid was CLOSED when system hung - lock screen was active on external display"
+    },
+    {
+      "severity": "info",
+      "message": "Suspend/resume events detected:"
+    },
+    {
+      "severity": "warning",
+      "message": "Sleep inhibitors active: 7 \u2014 these block IdleAction=suspend"
+    },
+    {
+      "severity": "info",
+      "message": "Last user activity: Mar 22 12:22:59 yonatan.d-TP gdm-password][34329]: gkr-pam: unlocked login keyri"
+    },
+    {
+      "severity": "error",
+      "message": "GDM auth service failures: 2 occurrence(s)"
+    },
+    {
+      "severity": "ok",
+      "message": "No kernel panics or critical messages logged"
+    },
+    {
+      "severity": "ok",
+      "message": "No OOM events"
+    },
+    {
+      "severity": "info",
+      "message": "Network route changes: 17"
+    }
+  ],
+  "gpu_events": [
+    {
+      "type": "cursor_update_failure",
+      "message": "Mar 21 20:25:21 yonatan.d-TP gnome-shell[2946]: Cursor update failed: drmModeAtomicCommit: Invalid argument"
+    }
+  ],
+  "gpu_events_near_hang": false,
+  "thermal_events": [],
+  "lid_events": [
+    "Mar 21 19:43:37 yonatan.d-TP kernel: DMAR-IR: Queued invalidation will be enabled to support x2apic and Intr-remapping.",
+    "Mar 21 19:43:37 yonatan.d-TP kernel: iommu: DMA domain TLB invalidation policy: lazy mode",
+    "Mar 21 19:43:37 yonatan.d-TP kernel: DMAR: dmar0: Using Queued invalidation",
+    "Mar 21 19:43:37 yonatan.d-TP kernel: DMAR: dmar1: Using Queued invalidation",
+    "Mar 21 19:43:37 yonatan.d-TP kernel: input: Lid Switch as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0D:00/input/input1",
+    "Mar 21 19:43:37 yonatan.d-TP kernel: ACPI: button: Lid Switch [LID]",
+    "Mar 21 19:43:39 yonatan.d-TP systemd-logind[1216]: Watching system buttons on /dev/input/event1 (Lid Switch)",
+    "Mar 21 19:43:40 yonatan.d-TP xdg-document-portal[1964]: Ignoring invalid max threads value 4294967295 > max (100000).",
+    "Mar 21 19:43:47 yonatan.d-TP gnome-keyring-daemon[2684]: keyring was in an invalid or unrecognized format: /home/yonatan/.local/share/keyrings/default.keyring",
+    "Mar 21 19:43:47 yonatan.d-TP gnome-keyring-d[2684]: keyring was in an invalid or unrecognized format: /home/yonatan/.local/share/keyrings/default.keyring",
+    "Mar 21 19:43:47 yonatan.d-TP xdg-document-portal[2743]: Ignoring invalid max threads value 4294967295 > max (100000).",
+    "Mar 21 19:43:47 yonatan.d-TP user-session-migration[2862]: stderr: rm: cannot remove '.config/autostart/ignore-lid-switch-tweak.desktop': No such file or directory",
+    "Mar 21 19:43:49 yonatan.d-TP tracker-miner-fs-3[3912]: (tracker-extract-3:3912): GLib-GIO-WARNING **: 19:43:49.555: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 21 19:45:13 yonatan.d-TP chrome-hnpfjngllnobngcgfapefoaidbinmjnm-Default.desktop[3304]: [5518:34:0321/194513.338034:ERROR:third_party/webrtc/pc/sdp_offer_answer.cc:500] A BUNDLE group contains a codec collision between [111: audio/opus] and [111: audio/opus]. All codecs must share the same type, encoding name, clock rate and parameters. (INVALID_PARAMETER)",
+    "Mar 21 19:45:13 yonatan.d-TP chrome-hnpfjngllnobngcgfapefoaidbinmjnm-Default.desktop[3304]: [5518:34:0321/194513.516741:ERROR:third_party/webrtc/pc/sdp_offer_answer.cc:500] A BUNDLE group contains a codec collision between [111: audio/opus] and [111: audio/opus]. All codecs must share the same type, encoding name, clock rate and parameters. (INVALID_PARAMETER)",
+    "Mar 21 20:25:21 yonatan.d-TP gnome-shell[2946]: Cursor update failed: drmModeAtomicCommit: Invalid argument",
+    "Mar 21 20:33:02 yonatan.d-TP systemd-logind[1216]: Lid closed.",
+    "Mar 21 20:35:33 yonatan.d-TP systemd-logind[1216]: Lid opened.",
+    "Mar 21 21:01:51 yonatan.d-TP tracker-miner-fs-3[11377]: (tracker-extract-3:11377): GLib-GIO-WARNING **: 21:01:51.094: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 21 21:21:23 yonatan.d-TP tracker-miner-fs-3[12777]: (tracker-extract-3:12777): GLib-GIO-WARNING **: 21:21:23.803: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 21 21:42:06 yonatan.d-TP tracker-miner-fs-3[14691]: (tracker-extract-3:14691): GLib-GIO-WARNING **: 21:42:06.632: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 21 21:44:16 yonatan.d-TP tracker-miner-fs-3[14945]: (tracker-extract-3:14945): GLib-GIO-WARNING **: 21:44:16.773: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 21 21:45:06 yonatan.d-TP tracker-miner-fs-3[15117]: (tracker-extract-3:15117): GLib-GIO-WARNING **: 21:45:06.380: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 21 21:46:11 yonatan.d-TP tracker-miner-fs-3[15180]: (tracker-extract-3:15180): GLib-GIO-WARNING **: 21:46:11.045: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 21 21:52:05 yonatan.d-TP tracker-miner-fs-3[16181]: (tracker-extract-3:16181): GLib-GIO-WARNING **: 21:52:05.408: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 21 21:57:03 yonatan.d-TP tracker-miner-fs-3[16763]: (tracker-extract-3:16763): GLib-GIO-WARNING **: 21:57:03.773: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 21 22:07:23 yonatan.d-TP tracker-miner-fs-3[17765]: (tracker-extract-3:17765): GLib-GIO-WARNING **: 22:07:23.391: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 21 22:07:54 yonatan.d-TP tracker-miner-fs-3[17807]: (tracker-extract-3:17807): GLib-GIO-WARNING **: 22:07:54.400: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 21 22:09:40 yonatan.d-TP tracker-miner-fs-3[17987]: (tracker-extract-3:17987): GLib-GIO-WARNING **: 22:09:40.757: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 21 22:09:53 yonatan.d-TP tracker-miner-fs-3[18010]: (tracker-extract-3:18010): GLib-GIO-WARNING **: 22:09:53.103: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 21 22:24:02 yonatan.d-TP systemd-logind[1216]: Lid closed.",
+    "Mar 22 10:11:34 yonatan.d-TP tracker-miner-fs-3[24393]: (tracker-extract-3:24393): GLib-GIO-WARNING **: 10:11:34.372: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 22 10:15:52 yonatan.d-TP tracker-miner-fs-3[25400]: (tracker-extract-3:25400): GLib-GIO-WARNING **: 10:15:52.375: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 22 10:21:36 yonatan.d-TP tracker-miner-fs-3[26012]: (tracker-extract-3:26012): GLib-GIO-WARNING **: 10:21:36.953: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)",
+    "Mar 22 12:17:06 yonatan.d-TP tracker-miner-fs-3[33474]: (tracker-extract-3:33474): GLib-GIO-WARNING **: 12:17:06.359: Error creating IO channel for /proc/self/mountinfo: Invalid argument (g-io-error-quark, 13)"
+  ],
+  "gdm_auth_failures": 2,
+  "gdm_events_near_hang": false,
+  "gdm_triggered_by_lid_open": false,
+  "last_activity": "Mar 22 12:22:59 yonatan.d-TP gdm-password][34329]: gkr-pam: unlocked login keyring",
+  "hang_window": {
+    "last_log": "2026-03-22T12:39:37+02:00",
+    "reboot": "2026-03-22T13:00:08+02:00",
+    "gap_seconds": 1231.0,
+    "gap_human": "0:20:31"
+  },
+  "root_cause": "Unable to determine exact root cause. The system froze without logging a clear error, suggesting a hard lockup at the hardware or low-level driver level.",
+  "severity": "MEDIUM",
+  "gdm_auth_lines": [
+    "Mar 21 19:43:47 yonatan.d-TP gdm3[1771]: Gdm: on_display_added: assertion 'GDM_IS_REMOTE_DISPLAY (display)' failed",
+    "Mar 21 19:43:49 yonatan.d-TP gdm3[1771]: Gdm: on_display_removed: assertion 'GDM_IS_REMOTE_DISPLAY (display)' failed"
+  ],
+  "recommendations": [
+    "Check for BIOS/firmware updates for this ThinkPad model",
+    "Monitor system temperatures - ACPI/EC bug prevents thermal management",
+    "Consider enabling kdump for future crash analysis"
+  ]
+}

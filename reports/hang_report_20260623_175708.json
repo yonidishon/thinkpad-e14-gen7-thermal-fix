@@ -1,0 +1,139 @@
+{
+  "timestamp": "2026-06-23T17:57:07.761818",
+  "system_info": {
+    "hostname": "yonatan.d-TP",
+    "kernel": "6.17.0-35-generic",
+    "cmdline": "BOOT_IMAGE=/boot/vmlinuz-6.17.0-35-generic root=UUID=e0d2260a-8b7f-4140-bd09-1515a5d6d711 ro quiet splash i915.enable_psr=0 i915.enable_dsb=0 i915.enable_dc=0 crashkernel=2G-4G:320M,4G-32G:512M,32G-64G:1024M,64G-128G:2048M,128G-:4096M vt.handoff=7",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255H\n                         Intel(R) Core(TM) Ultra 7 255H None CPU @ 2.0GHz",
+    "gpu": "00:02.0 VGA compatible controller: Intel Corporation Arrow Lake-P [Intel Graphics] (rev 03)",
+    "memory": "29Gi",
+    "sleep_mode": "[s2idle]",
+    "is_root": true
+  },
+  "boot_info": {
+    "previous_boot_start": "2026-06-23T17:37:52+03:00",
+    "previous_boot_last_log": "2026-06-23T17:41:51+03:00",
+    "current_boot_start": "2026-06-23T17:53:12+03:00",
+    "uptime_before_hang": "0:03:59"
+  },
+  "findings": [
+    {
+      "severity": "ok",
+      "message": "Kernel param: i915.enable_psr=0 (Panel Self Refresh disabled)"
+    },
+    {
+      "severity": "ok",
+      "message": "Kernel param: i915.enable_dsb=0 (Display State Buffer disabled)"
+    },
+    {
+      "severity": "ok",
+      "message": "Kernel param: i915.enable_dc=0 (Display C-states disabled)"
+    },
+    {
+      "severity": "info",
+      "message": "Last log before hang: 2026-06-23T17:41:51+03:00"
+    },
+    {
+      "severity": "info",
+      "message": "Reboot after hang:    2026-06-23T17:53:12+03:00"
+    },
+    {
+      "severity": "warning",
+      "message": "Unresponsive gap: 0:11:21 (system was frozen)"
+    },
+    {
+      "severity": "info",
+      "message": "System was up for 0:03:59 before hanging"
+    },
+    {
+      "severity": "warning",
+      "message": "DRM errors: 1 occurrence(s)"
+    },
+    {
+      "severity": "ok",
+      "message": "No GPU errors found in previous boot logs"
+    },
+    {
+      "severity": "info",
+      "message": "Current temps: max=61C, avg=46C (zones: 50C, 20C, 61C, 50C, 45C, 45C, 46C, 35C, 59C, 59C, 37C)"
+    },
+    {
+      "severity": "warning",
+      "message": "System NEVER suspended (s2idle not triggered) - ran continuously"
+    },
+    {
+      "severity": "warning",
+      "message": "Sleep inhibitors active: 6 \u2014 these block IdleAction=suspend"
+    },
+    {
+      "severity": "ok",
+      "message": "No GDM auth service failures detected"
+    },
+    {
+      "severity": "error",
+      "message": "Critical kernel messages: 7"
+    },
+    {
+      "severity": "ok",
+      "message": "No OOM events"
+    },
+    {
+      "severity": "info",
+      "message": "Network route changes: 1"
+    }
+  ],
+  "gpu_events": [],
+  "gpu_events_near_hang": true,
+  "thermal_events": [],
+  "lid_events": [
+    "Jun 23 17:37:52 yonatan.d-TP kernel: DMAR-IR: Queued invalidation will be enabled to support x2apic and Intr-remapping.",
+    "Jun 23 17:37:52 yonatan.d-TP kernel: iommu: DMA domain TLB invalidation policy: lazy mode",
+    "Jun 23 17:37:52 yonatan.d-TP kernel: DMAR: dmar0: Using Queued invalidation",
+    "Jun 23 17:37:52 yonatan.d-TP kernel: DMAR: dmar1: Using Queued invalidation",
+    "Jun 23 17:37:52 yonatan.d-TP kernel: input: Lid Switch as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0D:00/input/input1",
+    "Jun 23 17:37:52 yonatan.d-TP kernel: ACPI: button: Lid Switch [LID]",
+    "Jun 23 17:37:54 yonatan.d-TP kernel: Modules linked in: thinkpad_acpi(+) iwlwifi nvram ucsi_acpi typec_ucsi typec snd_seq_midi snd_seq_midi_event snd_rawmidi processor_thermal_device_pci cfg80211 processor_thermal_device mei_me processor_thermal_wt_hint intel_lpss_pci platform_temperature_control intel_lpss processor_thermal_soc_slider mei intel_vpu(+) idma64 processor_thermal_rfim processor_thermal_rapl snd_seq intel_rapl_common thunderbolt processor_thermal_wt_req igen6_edac processor_thermal_power_floor processor_thermal_mbox snd_seq_device snd_timer i2c_hid_acpi i2c_hid hid snd soundcore platform_profile int3403_thermal int340x_thermal_zone intel_pmc_core pmt_telemetry pmt_discovery pmt_class int3400_thermal intel_hid acpi_tad acpi_thermal_rel intel_pmc_ssram_telemetry sparse_keymap acpi_pad binfmt_misc nls_iso8859_1 sch_fq_codel vmwgfx msr parport_pc ppdev lp parport efi_pstore nfnetlink dmi_sysfs ip_tables x_tables autofs4 xe drm_ttm_helper drm_suballoc_helper gpu_sched drm_gpuvm drm_exec drm_gpusvm_helper i915 i2c_algo_bit drm_buddy",
+    "Jun 23 17:37:57 yonatan.d-TP kernel: iwlwifi 0000:00:14.3: Transport status: 0x00000042, valid: 6",
+    "Jun 23 17:37:57 yonatan.d-TP kernel: iwlwifi 0000:00:14.3: 0x00000000 | l2p_mhvalid",
+    "Jun 23 17:37:57 yonatan.d-TP kernel: iwlwifi 0000:00:14.3: Transport status: 0x00000042, valid: 7",
+    "Jun 23 17:38:04 yonatan.d-TP kernel:  lenovo_wmi_capdata01 snd_pcm_dmaengine snd_pcm think_lmi firmware_attributes_class wmi_bmof e1000e(+) i2c_i801 crc8 i2c_smbus iwlmvm(+) i2c_mux mac80211 snd_ctl_led libarc4 thinkpad_acpi iwlwifi nvram ucsi_acpi typec_ucsi typec snd_seq_midi snd_seq_midi_event snd_rawmidi processor_thermal_device_pci cfg80211 processor_thermal_device mei_me processor_thermal_wt_hint intel_lpss_pci platform_temperature_control intel_lpss processor_thermal_soc_slider mei intel_vpu idma64 processor_thermal_rfim processor_thermal_rapl snd_seq intel_rapl_common thunderbolt processor_thermal_wt_req igen6_edac processor_thermal_power_floor processor_thermal_mbox snd_seq_device snd_timer i2c_hid_acpi i2c_hid hid snd soundcore platform_profile int3403_thermal int340x_thermal_zone intel_pmc_core pmt_telemetry pmt_discovery pmt_class int3400_thermal intel_hid acpi_tad acpi_thermal_rel intel_pmc_ssram_telemetry sparse_keymap acpi_pad binfmt_misc nls_iso8859_1 sch_fq_codel vmwgfx msr parport_pc ppdev lp parport efi_pstore nfnetlink",
+    "Jun 23 17:38:04 yonatan.d-TP kernel:  lenovo_wmi_capdata01 snd_pcm_dmaengine snd_pcm think_lmi firmware_attributes_class wmi_bmof e1000e(+) i2c_i801 crc8 i2c_smbus iwlmvm(+) i2c_mux mac80211 snd_ctl_led libarc4 thinkpad_acpi iwlwifi nvram ucsi_acpi typec_ucsi typec snd_seq_midi snd_seq_midi_event snd_rawmidi processor_thermal_device_pci cfg80211 processor_thermal_device mei_me processor_thermal_wt_hint intel_lpss_pci platform_temperature_control intel_lpss processor_thermal_soc_slider mei intel_vpu idma64 processor_thermal_rfim processor_thermal_rapl snd_seq intel_rapl_common thunderbolt processor_thermal_wt_req igen6_edac processor_thermal_power_floor processor_thermal_mbox snd_seq_device snd_timer i2c_hid_acpi i2c_hid hid snd soundcore platform_profile int3403_thermal int340x_thermal_zone intel_pmc_core pmt_telemetry pmt_discovery pmt_class int3400_thermal intel_hid acpi_tad acpi_thermal_rel intel_pmc_ssram_telemetry sparse_keymap acpi_pad binfmt_misc nls_iso8859_1 sch_fq_codel vmwgfx msr parport_pc ppdev lp parport efi_pstore nfnetlink",
+    "Jun 23 17:38:04 yonatan.d-TP kernel:  lenovo_wmi_capdata01 snd_pcm_dmaengine snd_pcm think_lmi firmware_attributes_class wmi_bmof e1000e(+) i2c_i801 crc8 i2c_smbus iwlmvm(+) i2c_mux mac80211 snd_ctl_led libarc4 thinkpad_acpi iwlwifi nvram ucsi_acpi typec_ucsi typec snd_seq_midi snd_seq_midi_event snd_rawmidi processor_thermal_device_pci cfg80211 processor_thermal_device mei_me processor_thermal_wt_hint intel_lpss_pci platform_temperature_control intel_lpss processor_thermal_soc_slider mei intel_vpu idma64 processor_thermal_rfim processor_thermal_rapl snd_seq intel_rapl_common thunderbolt processor_thermal_wt_req igen6_edac processor_thermal_power_floor processor_thermal_mbox snd_seq_device snd_timer i2c_hid_acpi i2c_hid hid snd soundcore platform_profile int3403_thermal int340x_thermal_zone intel_pmc_core pmt_telemetry pmt_discovery pmt_class int3400_thermal intel_hid acpi_tad acpi_thermal_rel intel_pmc_ssram_telemetry sparse_keymap acpi_pad binfmt_misc nls_iso8859_1 sch_fq_codel vmwgfx msr parport_pc ppdev lp parport efi_pstore nfnetlink",
+    "Jun 23 17:38:12 yonatan.d-TP kernel: iwlwifi 0000:00:14.3: Transport status: 0x00000842, valid: 6",
+    "Jun 23 17:38:12 yonatan.d-TP kernel: iwlwifi 0000:00:14.3: 0x00000000 | l2p_mhvalid",
+    "Jun 23 17:38:12 yonatan.d-TP kernel: iwlwifi 0000:00:14.3: Transport status: 0x00000842, valid: 1090650119",
+    "Jun 23 17:38:12 yonatan.d-TP kernel: iwlwifi 0000:00:14.3: Transport status: 0x00000842, valid: 6",
+    "Jun 23 17:38:12 yonatan.d-TP kernel: iwlwifi 0000:00:14.3: 0x00000000 | l2p_mhvalid",
+    "Jun 23 17:38:12 yonatan.d-TP kernel: iwlwifi 0000:00:14.3: Transport status: 0x00000842, valid: 1090650119",
+    "Jun 23 17:38:13 yonatan.d-TP kernel: iwlwifi 0000:00:14.3: Transport status: 0x00000842, valid: 6",
+    "Jun 23 17:38:13 yonatan.d-TP kernel: iwlwifi 0000:00:14.3: 0x00000000 | l2p_mhvalid",
+    "Jun 23 17:38:13 yonatan.d-TP kernel: iwlwifi 0000:00:14.3: Transport status: 0x00000842, valid: 1090650119",
+    "Jun 23 17:38:13 yonatan.d-TP kernel:  lenovo_wmi_capdata01 snd_pcm_dmaengine snd_pcm think_lmi firmware_attributes_class wmi_bmof e1000e(+) i2c_i801 crc8 i2c_smbus iwlmvm(+) i2c_mux mac80211 snd_ctl_led libarc4 thinkpad_acpi iwlwifi nvram ucsi_acpi typec_ucsi typec snd_seq_midi snd_seq_midi_event snd_rawmidi processor_thermal_device_pci cfg80211 processor_thermal_device mei_me processor_thermal_wt_hint intel_lpss_pci platform_temperature_control intel_lpss processor_thermal_soc_slider mei intel_vpu idma64 processor_thermal_rfim processor_thermal_rapl snd_seq intel_rapl_common thunderbolt processor_thermal_wt_req igen6_edac processor_thermal_power_floor processor_thermal_mbox snd_seq_device snd_timer i2c_hid_acpi i2c_hid hid snd soundcore platform_profile int3403_thermal int340x_thermal_zone intel_pmc_core pmt_telemetry pmt_discovery pmt_class int3400_thermal intel_hid acpi_tad acpi_thermal_rel intel_pmc_ssram_telemetry sparse_keymap acpi_pad binfmt_misc nls_iso8859_1 sch_fq_codel vmwgfx msr parport_pc ppdev lp parport efi_pstore nfnetlink",
+    "Jun 23 17:38:13 yonatan.d-TP kernel:  lenovo_wmi_capdata01 snd_pcm_dmaengine snd_pcm think_lmi firmware_attributes_class wmi_bmof e1000e(+) i2c_i801 crc8 i2c_smbus iwlmvm(+) i2c_mux mac80211 snd_ctl_led libarc4 thinkpad_acpi iwlwifi nvram ucsi_acpi typec_ucsi typec snd_seq_midi snd_seq_midi_event snd_rawmidi processor_thermal_device_pci cfg80211 processor_thermal_device mei_me processor_thermal_wt_hint intel_lpss_pci platform_temperature_control intel_lpss processor_thermal_soc_slider mei intel_vpu idma64 processor_thermal_rfim processor_thermal_rapl snd_seq intel_rapl_common thunderbolt processor_thermal_wt_req igen6_edac processor_thermal_power_floor processor_thermal_mbox snd_seq_device snd_timer i2c_hid_acpi i2c_hid hid snd soundcore platform_profile int3403_thermal int340x_thermal_zone intel_pmc_core pmt_telemetry pmt_discovery pmt_class int3400_thermal intel_hid acpi_tad acpi_thermal_rel intel_pmc_ssram_telemetry sparse_keymap acpi_pad binfmt_misc nls_iso8859_1 sch_fq_codel vmwgfx msr parport_pc ppdev lp parport efi_pstore nfnetlink",
+    "Jun 23 17:38:13 yonatan.d-TP kernel: iwlwifi 0000:00:14.3: Transport status: 0x00000842, valid: 6",
+    "Jun 23 17:38:13 yonatan.d-TP kernel: iwlwifi 0000:00:14.3: 0x00000000 | l2p_mhvalid",
+    "Jun 23 17:38:13 yonatan.d-TP kernel: iwlwifi 0000:00:14.3: Transport status: 0x00000842, valid: 1090650119",
+    "Jun 23 17:38:13 yonatan.d-TP kernel: iwlwifi 0000:00:14.3: Transport status: 0x00000842, valid: 6",
+    "Jun 23 17:38:13 yonatan.d-TP kernel: iwlwifi 0000:00:14.3: 0x00000000 | l2p_mhvalid",
+    "Jun 23 17:38:13 yonatan.d-TP kernel: iwlwifi 0000:00:14.3: Transport status: 0x00000842, valid: 1090650119"
+  ],
+  "gdm_auth_failures": 0,
+  "gdm_events_near_hang": false,
+  "gdm_triggered_by_lid_open": false,
+  "last_activity": null,
+  "hang_window": {
+    "last_log": "2026-06-23T17:41:51+03:00",
+    "reboot": "2026-06-23T17:53:12+03:00",
+    "gap_seconds": 681.0,
+    "gap_human": "0:11:21"
+  },
+  "root_cause": "Unable to determine exact root cause. The system froze without logging a clear error. Possible causes: gnome-shell compositor crash (Wayland \u2014 if compositor dies, input becomes unresponsive even if kernel is fine), silent kernel lockup at hardware/driver level, or i915 driver freeze without panic.",
+  "severity": "MEDIUM",
+  "recommendations": [
+    "Check /var/crash/ for crash dumps: ls /var/crash/",
+    "If gnome-shell crashed, consider reducing session uptime (reboot after ~7 days)",
+    "Check for BIOS/firmware updates for this ThinkPad model",
+    "If capslock LED was blinking: kernel panic \u2014 check /var/crash/ for kdump",
+    "If capslock LED was NOT blinking: likely gnome-shell or userspace freeze"
+  ]
+}

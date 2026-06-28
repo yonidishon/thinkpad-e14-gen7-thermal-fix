@@ -217,10 +217,16 @@ case $1 in
             echo "Blocking suspend: video export in progress" | systemd-cat -t check-exports
             exit 1
         fi
+        if pgrep -x claude > /dev/null; then
+            echo "Blocking suspend: claude process running" | systemd-cat -t check-exports
+            exit 1
+        fi
         ;;
 esac
 exit 0
 ```
+
+**⚠️ The `claude` block is a known liability:** it blocks idle-suspend during *every* Claude Code session, which defeats the idle-suspend hang-prevention strategy and keeps the machine on the extended-uptime compositor-accumulation path. It contributed to the 2026-06-27 hang being unrecoverable (41 idle-suspend attempts skipped). Consider removing or narrowing it.
 
 **Override:** `/etc/systemd/system/systemd-suspend.service.d/check-exports.conf`
 ```ini
@@ -355,6 +361,98 @@ ExecCondition=/usr/lib/systemd/system-sleep/check-exports.sh pre
 - Periodic reboots (e.g., weekly) to reset gnome-shell state — avoids long-uptime accumulation
 - No definitive fix yet; need more data
 
+### 2026-05-17: Mutter Window-Stack Corruption Compositor Freeze (Task Switcher Hung)
+
+**Symptom:** System completely unresponsive — no keyboard, no mouse, **no capslock blinking** (rules out kernel panic). User reported the alt-tab task switcher was hanging immediately before the full freeze. Required hard reset.
+
+**Timeline:**
+- May 10 11:12 - Boot (kernel 6.17.0-23, all three i915 params active, mutter 46.2-1ubuntu0.24.04.15)
+- May 10 12:57:26 - First `Invalid window geometry for xdg_surface@59` warning (snap LibreOffice on Wayland)
+- May 12 10:01 - First `meta_window_set_stack_position_no_sync: assertion 'window->stack_position >= 0' failed` (mutter window-stack assertion)
+- May 12-16 - Assertion fires intermittently; **frequency escalates** (5/day → 8/day on May 16)
+- May 17 07:43:43 - Assertion fires (after launching LibreOffice from desktop)
+- May 17 07:44:01 - Assertion fires again
+- May 17 07:46:05 - Last log entry (Chrome network error — unrelated)
+- May 17 07:47:27 - Hard reset (gap: 1m 22s)
+
+**Root Cause:** Mutter internal window-stack bookkeeping corruption. Over 6.8 days of uptime, 25 `meta_window_set_stack_position_no_sync` assertions accumulated, with rate escalating in the final 24h. The assertion lives in mutter's window stack — the same data structure the alt-tab task switcher walks. When the user invoked the switcher, mutter tried to enumerate the corrupted stack and the compositor jammed completely. NOT a kernel panic (no capslock blink, no kdump), NOT an i915 hang (no GPU errors near hang), NOT GDM auth (no GDM activity near hang).
+
+**Known Upstream Bug (no fix released for Noble's mutter 46.x as of 2026-05):**
+- LP #2064709 — "Confirmed" since May 2024, still open. Affects mutter 46.x through 50.x on Ubuntu Noble through Questing.
+- GNOME mutter #1647 — upstream, no fix merged.
+- ubuntu/Tiling-Assistant#329 — same crash signature, closed unresolved ("can't reproduce").
+- Documented triggers: moving windows between monitors (especially "throw to top to maximize"), Wayland clients with invalid `xdg_surface` geometry (snap apps), Tiling Assistant tile/untile operations.
+
+**Likely trigger on this machine:** Combination of (a) **Tiling Assistant extension** manipulating window stack across the dual-monitor setup (eDP-1 laptop + DP-3 external), and (b) **snap LibreOffice** emitting invalid `xdg_surface` geometry (logged on May 10). Each invalid op corrupts the stack a bit; corruption accumulates until the switcher hits a negative `stack_position`.
+
+**Fixes Applied:**
+1. Documented this as a distinct hang family from the 2026-04-04 generic "gnome-shell freeze" — now we have a specific upstream-bug signature.
+
+**Recommended Fix (in order of risk/effort, do steps 1–3):**
+
+1. **Disable Tiling Assistant** (most targeted fix — direct match to GitHub issue #329):
+   ```bash
+   gnome-extensions disable tiling-assistant@ubuntu.com
+   ```
+   GNOME 46 ships builtin tiling (Super+Left/Right, Super+Up to maximize) that covers most of the same use cases. Re-enable only if disabling doesn't help.
+
+2. **Replace snap LibreOffice with the deb** (eliminates the invalid `xdg_surface` warnings):
+   ```bash
+   sudo snap remove libreoffice
+   sudo apt install libreoffice
+   ```
+
+3. **Apply pending gnome-shell update** (small patch from 46.0-...13 → 46.0-...14):
+   ```bash
+   sudo apt install --only-upgrade gnome-shell
+   ```
+
+4. **If steps 1–3 don't help over 2+ weeks**, fall back to scheduled weekly reboots — the bug has no upstream fix for mutter 46.x and Noble won't backport mutter 48.
+
+**Leading-indicator signal for future hangs:** Watch the daily count of the assertion. >5/day → degrading; >8/day → consider preemptive reboot:
+```bash
+journalctl --since "today" | grep -c "meta_window_set_stack_position_no_sync"
+```
+
+### 2026-06-23: Short Post-Boot Freeze (Inconclusive — Analysis Completed Retroactively)
+
+**Status:** Analysis was run on Jun 23 (`reports/hang_report_20260623_*.json`, generated 3× seconds apart) but never written up. Documented here for completeness.
+
+**Symptom:** System froze ~4 minutes after boot. Unresponsive gap 0:11:21, then hard reset.
+
+**Timeline:**
+- Jun 23 17:37:52 - Boot (kernel 6.17.0-35, all three i915 params active)
+- Jun 23 17:41:51 - Last log (only 3:59 uptime)
+- Jun 23 17:53:12 - Reboot after hard reset
+
+**Root Cause:** Inconclusive. The freeze logged no clear error. Notable context: a `gnome-shell` crash dump (`/var/crash/_usr_bin_gnome-shell.1000.crash`) and an `inkscape` crash dump exist from earlier that day (15:10 and 18:17). Likely another userspace compositor instability, but too little log data (4-min boot) to confirm. Not reproduced; superseded by the well-evidenced Jun 27 incident below.
+
+### 2026-06-27: gnome-shell Compositor Freeze Under VMware Windows-VM Load
+
+**Symptom:** System completely unresponsive — no keyboard, no mouse, **no capslock blinking** (rules out kernel panic). A Windows VM (VMware Workstation) was running with a software install in progress. Required hard reset.
+
+**Timeline (boot Jun 24 21:34 → reset Jun 28 ~11:25):**
+- Jun 24 21:34:58 - Boot (kernel 6.17.0-35, all three i915 params active, VMware modules loaded)
+- Jun 27 12:51:03 - VMware Workstation launched; Windows VM started (`vmx-vcpu-*`)
+- Jun 27 19:33:46 - Last gnome-shell own log (ibus `Set global engine failed` DBus errors)
+- Jun 27 19:44:48–52 - **Burst of 5 split-lock traps from the VM vCPUs** (`x86/split lock detection: #AC: vmx-vcpu-1..5`). Split locks take a global bus lock that stalls every host core.
+- Jun 27 19:45:16 - gnome-shell requests fingerprint auth (user at machine)
+- Jun 27 19:45:39 - **`gsd-media-keys: Couldn't lock screen: Timeout was reached`** ← first symptom; compositor already unresponsive. **Freeze onset.**
+- Jun 27 20:11:13 → Jun 28 11:20:30 - `systemd-logind: Delay lock is active (PID 3062/gnome-shell) but inhibitor timeout is reached`, repeating every ~26 min, **41 times**. gnome-shell frozen holding the suspend delay-inhibitor.
+- Kernel, NetworkManager, cron logged continuously until the 11:25 reset.
+
+**Root Cause:** gnome-shell/mutter Wayland compositor hang (same family as 2026-04-04 and 2026-05-17), **not** a kernel panic — confirmed: no oops/hung-task/soft-lockup/rcu-stall anywhere in the boot, pstore empty, and gnome-shell produced **no crash dump** (it deadlocked/hung, it did not segfault). This is **not** the May 17 mutter-stack-assertion bug — those assertions stopped Jun 26 17:54, ~26h before the freeze. **Probable trigger:** the VMware Windows-VM split-lock trap burst ~50s before the first freeze symptom; the host-wide bus-lock stalls under heavy VM load tipped the already-fragile compositor into a hang. Causation not provable (no trace captured), but the established compositor-freeze family + VM-load spike align tightly in time.
+
+**Why recovery failed:** logind tried idle-suspend 41 times but **every attempt was skipped** because `check-exports.sh` had been extended (undocumented) to also block suspend on a running `claude` process: `Blocking suspend: claude process running`. Even had suspend fired, the frozen compositor was holding the delay-lock and would likely have hung the suspend too.
+
+**Fixes Applied:**
+1. Documented this as a VM-load-triggered variant of the compositor-freeze family.
+
+**Recommended (not yet applied — require user action):**
+1. **Disable split-lock detection** to remove host-wide stalls when running VMs/Windows guests (most targeted fix for this trigger). Add `split_lock_detect=off` to `GRUB_CMDLINE_LINUX_DEFAULT` in `/etc/default/grub`, then `sudo update-grub && sudo reboot`.
+2. **Review the `claude` block in `check-exports.sh`** (`/usr/lib/systemd/system-sleep/check-exports.sh`). It blocks idle-suspend during *every* Claude Code session, defeating the idle-suspend hang-prevention strategy and leaving the machine on the extended-uptime compositor-accumulation path. Consider removing it or narrowing the condition.
+3. **Periodic reboots** still apply — uptime was ~3.4 days (Jun 24→27) at freeze.
+
 ## Temperature Thresholds
 
 | Temperature | Status | Action |
@@ -368,6 +466,8 @@ ExecCondition=/usr/lib/systemd/system-sleep/check-exports.sh pre
 
 - **i915 GPU driver instability**: Atomic update failures confirmed on kernel 6.17.0-19 (2026-03-20). `i915.enable_psr=0`, `i915.enable_dsb=0`, and `i915.enable_dc=0` are all required. Not a kernel-version-fixable issue at this time.
 - **i915 resume instability**: Kernel panic ~25min after resume from s2idle (2026-03-22). Mitigated with `i915.enable_dc=0`. `linux-crashdump` installed for future panic capture.
+- **Mutter window-stack corruption (Wayland)**: `meta_window_set_stack_position_no_sync` assertion accumulates over multi-day uptime, eventually freezes compositor (2026-05-17). Upstream bug LP #2064709 unfixed in mutter 46.x. Mitigations applied: disabled Tiling Assistant, replaced snap LibreOffice. Long-uptime risk remains; consider weekly reboots if recurrences continue.
+- **Compositor freeze under heavy VM load (Wayland)**: gnome-shell/mutter hangs (no kernel panic) under VMware Windows-VM load; correlated with VM split-lock trap bursts (2026-06-27). Recommended mitigation: `split_lock_detect=off` kernel param. Idle-suspend recovery is currently defeated by a `claude`-process block in `check-exports.sh`.
 - ~~**No fan control**~~: **RESOLVED** - EC fix restores BIOS fan control
 - ~~**No thinkpad_acpi sensors**~~: **RESOLVED** - `/proc/acpi/ibm/thermal` and `/proc/acpi/ibm/fan` now available
 - **thermald**: Still may not support Arrow Lake CPU (less critical now that BIOS handles fan automatically)
