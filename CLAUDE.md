@@ -457,6 +457,25 @@ journalctl --since "today" | grep -c "meta_window_set_stack_position_no_sync"
 **Still recommended:**
 3. **Periodic reboots** still apply — uptime was ~3.4 days (Jun 24→27) at freeze.
 
+## Firmware & Update Status
+
+**As of 2026-06-28:**
+
+- **System BIOS:** `R30ET55W` (1.55), dated 2026-01-07. No update available in fwupd (`fwupdmgr get-updates` → System Firmware: no update).
+- **Secure Boot:** **disabled** (`secureboot: Secure boot disabled` in boot log).
+- **Last firmware flash:** WD SN740 SSD firmware, 2026-04-29 (`fwupdmgr get-history`). Nothing flashed since.
+- **Pending firmware update (not applied, left intentionally):** UEFI dbx (Secure Boot revocation database) `20250902 → 20260402`. Low priority / moot while Secure Boot is off. Apply with `fwupdmgr update` only if Secure Boot is re-enabled.
+- **Microcode:** `amd64-microcode` was upgraded 2026-06-26, but this is an **Intel** Arrow Lake CPU — that package is inert here. Boot log shows `x86/CPU: Model not found in latest microcode list` (no Intel microcode update bundled for this CPU yet).
+
+**To review recent updates:**
+```bash
+# OS packages
+grep -E "Start-Date|Commandline|Upgrade:|Install:" /var/log/apt/history.log
+# Firmware
+fwupdmgr get-history     # past flashes
+fwupdmgr get-updates     # pending
+```
+
 ## Temperature Thresholds
 
 | Temperature | Status | Action |
